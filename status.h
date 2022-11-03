@@ -3,7 +3,8 @@
 
 typedef enum status_enum
 {
-	SHOW_HELP = 0,
+	OK = 0,
+	SHOW_HELP,
 	TOO_FEW_ARGUMENTS,
 	UNABLE_TO_OPEN_FILE,
 	CANNOT_LOAD_FILE,

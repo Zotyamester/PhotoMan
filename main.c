@@ -7,7 +7,7 @@
 
 int main(int argc, char* argv[])
 {
-	Status status = 0;
+	Status status = OK;
 
 	for (int i = 1; i < argc; i++)
 	{
@@ -72,6 +72,8 @@ int main(int argc, char* argv[])
 		goto destroy_image;
 	}
 
+	goto ending;
+
 destroy_image:
 	image_destroy(image);
 close_output:
@@ -80,6 +82,6 @@ close_input:
 	fclose(input_file);
 print_status:
 	status_print(status);
-
+ending:
 	return status;
 }
