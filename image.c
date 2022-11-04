@@ -18,12 +18,10 @@ Image* image_create(uint32_t width, uint32_t height)
 	image->pixels = pixels;
 	image->width = width;
 	image->height = height;
-	image->format_specific_data = NULL;
 }
 
 void image_destroy(Image* image)
 {
-	free(image->format_specific_data);
 	free(image->pixels);
 	free(image);
 }

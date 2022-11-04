@@ -5,7 +5,7 @@
 #include <stdbool.h>
 #include "image.h"
 
-bool load_bmp(Image** p_image, FILE* file);
-bool store_bmp(Image** p_image, FILE* file);
+bool bmp_load(Image** p_image, FILE* file);
+bool bmp_store(Image** p_image, FILE* file);
 
 #endif /* BMP_H_INCLUDED */

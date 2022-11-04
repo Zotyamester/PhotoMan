@@ -16,7 +16,6 @@ typedef struct image_struct
 	uint32_t width;
 	uint32_t height;
 	Pixel *pixels;
-	void* format_specific_data;
 } Image;
 
 Image* image_create(uint32_t width, uint32_t height);

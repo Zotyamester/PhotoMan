@@ -4,7 +4,6 @@
 #include "image.h"
 #include "bmp.h"
 
-
 int main(int argc, char* argv[])
 {
 	Status status = OK;
@@ -32,14 +31,14 @@ int main(int argc, char* argv[])
 	}
 
 	FILE* output_file = fopen(argv[2], "wb");
-	{
+	if (output_file == NULL) {
 		status = UNABLE_TO_OPEN_FILE;
 		goto close_input;
 	}
 
 	Image* image;
 
-	if (!load_bmp(&image, input_file))
+	if (!bmp_load(&image, input_file))
 	{
 		status = CANNOT_LOAD_FILE;
 		goto close_output;
@@ -66,7 +65,7 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	if (!store_bmp(&image, output_file))
+	if (!bmp_store(&image, output_file))
 	{
 		status = CANNOT_SAVE_FILE;
 		goto destroy_image;
