@@ -56,9 +56,9 @@ static bool bmp_check_info_validity(struct info_header_struct* infoheader)
 	{
 	case 1:
 		return infoheader->colors_used == 1;
-	case 4: case 8: case 16:
+	case 4: case 8:
 		return infoheader->colors_used == 1 << infoheader->bits_per_pixel;
-	case 24:
+	case 16: case 24:
 		return true;
 	default:
 		return false;
@@ -79,7 +79,7 @@ static bool bmp_read_file_header(struct file_header_struct* p_fileheader, FILE* 
 		fread(&p_fileheader->file_size, sizeof(p_fileheader->file_size), 1, file) == 1 &&
 		fread(&p_fileheader->reserved, sizeof(p_fileheader->reserved), 1, file) == 1 &&
 		fread(&p_fileheader->data_offset, sizeof(p_fileheader->data_offset), 1, file) == 1
-	);
+		);
 }
 
 static bool bmp_write_file_header(struct file_header_struct* p_fileheader, FILE* file)
@@ -89,7 +89,7 @@ static bool bmp_write_file_header(struct file_header_struct* p_fileheader, FILE*
 		fwrite(&p_fileheader->file_size, sizeof(p_fileheader->file_size), 1, file) == 1 &&
 		fwrite(&p_fileheader->reserved, sizeof(p_fileheader->reserved), 1, file) == 1 &&
 		fwrite(&p_fileheader->data_offset, sizeof(p_fileheader->data_offset), 1, file) == 1
-	);
+		);
 }
 
 static bool bmp_read_info_header(struct info_header_struct* p_infoheader, FILE* file)
@@ -106,7 +106,7 @@ static bool bmp_read_info_header(struct info_header_struct* p_infoheader, FILE* 
 		fread(&p_infoheader->y_pixels_per_m, sizeof(p_infoheader->y_pixels_per_m), 1, file) == 1 &&
 		fread(&p_infoheader->colors_used, sizeof(p_infoheader->colors_used), 1, file) == 1 &&
 		fread(&p_infoheader->important_colors, sizeof(p_infoheader->important_colors), 1, file) == 1
-	);
+		);
 }
 
 static bool bmp_write_info_header(struct info_header_struct* p_infoheader, FILE* file)
@@ -123,7 +123,7 @@ static bool bmp_write_info_header(struct info_header_struct* p_infoheader, FILE*
 		fwrite(&p_infoheader->y_pixels_per_m, sizeof(p_infoheader->y_pixels_per_m), 1, file) == 1 &&
 		fwrite(&p_infoheader->colors_used, sizeof(p_infoheader->colors_used), 1, file) == 1 &&
 		fwrite(&p_infoheader->important_colors, sizeof(p_infoheader->important_colors), 1, file) == 1
-	);
+		);
 }
 
 bool bmp_load(Image** p_image, FILE* file)
@@ -179,30 +179,39 @@ bool bmp_load(Image** p_image, FILE* file)
 		uint64_t bitptr = 0;
 		while (bitptr < infoheader.width * infoheader.bits_per_pixel)
 		{
+			Pixel pixel;
 			uint64_t bitendptr = bitptr + infoheader.bits_per_pixel;
 
+			/* TODO: probably needs some refactoring */
 			uint32_t pixeldata = (row[bitptr / 32] >> (bitptr % 32)) & ((1 << infoheader.bits_per_pixel) - 1);
-			if (infoheader.bits_per_pixel > 1)
+			if (infoheader.bits_per_pixel == 1)
 			{
-				pixeldata |= (row[bitendptr / 32] & ((1 << (bitendptr % 32)) - 1)) << (32 - bitptr % 32);
-			}
-
-			Pixel pixel;
-			if (infoheader.bits_per_pixel <= 8)
-			{
-				pixel.blue = color_table[pixeldata].blue;
-				pixel.green = color_table[pixeldata].green;
-				pixel.red = color_table[pixeldata].red;
+				/* a monochrome image has exactly one color in the table, so we either display that or nothing (black) */
+				struct color_entry* color = &color_table[0];
+				pixel.blue = pixeldata * color->blue;
+				pixel.green = pixeldata * color->green;
+				pixel.red = pixeldata * color->red;
 			}
 			else
 			{
-				pixel.blue = (pixeldata) & 0xFF;
-				pixel.green = (pixeldata >>= 8) & 0xFF;
-				pixel.red = (pixeldata >>= 8);
+				pixeldata |= (row[bitendptr / 32] & ((1 << (bitendptr % 32)) - 1)) << (32 - bitptr % 32);
+				if (infoheader.bits_per_pixel <= 8)
+				{
+					struct color_entry* color = &color_table[pixeldata];
+					pixel.blue = color->blue;
+					pixel.green = color->green;
+					pixel.red = color->red;
+				}
+				else
+				{
+					pixel.blue = (pixeldata) & 0xFF;
+					pixel.green = (pixeldata >>= 8) & 0xFF;
+					pixel.red = (pixeldata >>= 8);
+				}
 			}
-			//printf("DEBUG PIXEL (bgr): %x %x %x\n", pixel.blue, pixel.green, pixel.red);
-			image->pixels[ptr++] = pixel;
 
+
+			image->pixels[ptr++] = pixel;
 			bitptr = bitendptr;
 		}
 	}
@@ -253,7 +262,7 @@ bool bmp_store(Image** p_image, FILE* file)
 	if (padding == NULL)
 		return false;
 
-	for (Pixel *p_row = image->pixels; p_row < image->pixels + infoheader.height * infoheader.width; p_row += infoheader.width)
+	for (Pixel* p_row = image->pixels; p_row < image->pixels + infoheader.height * infoheader.width; p_row += infoheader.width)
 	{
 		if (fwrite(p_row, 3, infoheader.width, file) != infoheader.width ||
 			fwrite(padding, sizeof(uint8_t), padding_size, file) != padding_size)
