@@ -134,6 +134,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="bmp.h" />
+    <ClInclude Include="debugmalloc.h" />
     <ClInclude Include="image.h" />
     <ClInclude Include="status.h" />
   </ItemGroup>

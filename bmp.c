@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+#include "debugmalloc.h"
+
 #define FILE_HEADER_SIZE 14
 #define INFO_HEADER_SIZE 40
 
@@ -142,9 +144,14 @@ bool bmp_load(Image** p_image, FILE* file)
 	if (!bmp_check_info_validity(&infoheader))
 		return false;
 
-	struct color_entry* color_table = (struct color_entry*)malloc(infoheader.colors_used * sizeof(struct color_entry));
-	if (color_table == NULL)
-		return false;
+	struct color_entry* color_table = NULL;
+	if (infoheader.colors_used > 0)
+	{
+		color_table = (struct color_entry*)malloc(infoheader.colors_used * sizeof(struct color_entry));
+		if (color_table == NULL)
+			return false;
+	}
+
 	if (fread(color_table, sizeof(struct color_entry), infoheader.colors_used, file) != infoheader.colors_used)
 	{
 		free(color_table);
@@ -258,9 +265,13 @@ bool bmp_store(Image** p_image, FILE* file)
 		return false;
 
 	uint32_t padding_size = row_width - infoheader.width * 3;
-	uint8_t* padding = (uint8_t*)calloc(padding_size, sizeof(uint8_t));
-	if (padding == NULL)
-		return false;
+	uint8_t* padding = NULL;
+	if (padding_size > 0)
+	{
+		padding = (uint8_t*)calloc(padding_size, sizeof(uint8_t));
+		if (padding == NULL)
+			return false;
+	}
 
 	for (Pixel* p_row = image->pixels; p_row < image->pixels + infoheader.height * infoheader.width; p_row += infoheader.width)
 	{

@@ -4,6 +4,8 @@
 #include "image.h"
 #include "bmp.h"
 
+#include "debugmalloc.h"
+
 int main(int argc, char* argv[])
 {
 	Status status = OK;
@@ -71,16 +73,15 @@ int main(int argc, char* argv[])
 		goto destroy_image;
 	}
 
-	goto ending;
-
 destroy_image:
 	image_destroy(image);
 close_output:
+	fflush(output_file);
 	fclose(output_file);
 close_input:
 	fclose(input_file);
 print_status:
 	status_print(status);
-ending:
+
 	return status;
 }

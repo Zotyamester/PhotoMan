@@ -38,5 +38,8 @@
     <ClInclude Include="status.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="debugmalloc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
