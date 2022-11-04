@@ -71,7 +71,6 @@ static uint32_t bmp_calculate_row_width(uint32_t width, uint16_t bits_per_pixel)
 	return ((width * bits_per_pixel + 31) / 32) * 4;
 }
 
-
 // TODO: Read and write for a struct should be one single function requiring a function pointer?
 static bool bmp_read_file_header(struct file_header_struct* p_fileheader, FILE* file)
 {
@@ -182,9 +181,11 @@ bool bmp_load(Image** p_image, FILE* file)
 		{
 			uint64_t bitendptr = bitptr + infoheader.bits_per_pixel;
 
-			uint32_t lower = (row[bitptr / 32] >> (bitptr % 32)) & ((1 << infoheader.bits_per_pixel) - 1);
-			uint32_t higher = row[bitendptr / 32] & ((1 << (32 - bitptr % 32)) - 1);
-			uint32_t pixeldata = lower | higher << (bitptr % 32);
+			uint32_t pixeldata = (row[bitptr / 32] >> (bitptr % 32)) & ((1 << infoheader.bits_per_pixel) - 1);
+			if (infoheader.bits_per_pixel > 1)
+			{
+				pixeldata |= (row[bitendptr / 32] & ((1 << (bitendptr % 32)) - 1)) << (32 - bitptr % 32);
+			}
 
 			Pixel pixel;
 			if (infoheader.bits_per_pixel <= 8)
@@ -199,6 +200,7 @@ bool bmp_load(Image** p_image, FILE* file)
 				pixel.green = (pixeldata >>= 8) & 0xFF;
 				pixel.red = (pixeldata >>= 8);
 			}
+			//printf("DEBUG PIXEL (bgr): %x %x %x\n", pixel.blue, pixel.green, pixel.red);
 			image->pixels[ptr++] = pixel;
 
 			bitptr = bitendptr;
@@ -223,7 +225,7 @@ bool bmp_store(Image** p_image, FILE* file)
 		.planes = 1,
 		.bits_per_pixel = 24, /* only 24 bit outputs are supported */
 		.compression = 0, /* only uncompressed outputs are supported */
-		.image_size = 0, /* while there's no support for compression, it's zero */
+		/* .image_size = ..., */
 		.x_pixels_per_m = 0, /* printed size is unsupported */
 		.y_pixels_per_m = 0, /* printed size is unsupported */
 		.colors_used = 0, /* color table is unsupported*/
@@ -231,10 +233,11 @@ bool bmp_store(Image** p_image, FILE* file)
 	};
 
 	uint32_t row_width = bmp_calculate_row_width(infoheader.width, infoheader.bits_per_pixel);
+	infoheader.image_size = infoheader.height * row_width;
 
 	struct file_header_struct fileheader = {
 		.signature = 19778,
-		.file_size = FILE_HEADER_SIZE + INFO_HEADER_SIZE + infoheader.height * row_width,
+		.file_size = FILE_HEADER_SIZE + INFO_HEADER_SIZE + infoheader.image_size,
 		.reserved = 0,
 		.data_offset = FILE_HEADER_SIZE + INFO_HEADER_SIZE
 	};
