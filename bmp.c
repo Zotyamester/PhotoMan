@@ -28,9 +28,9 @@ struct info_header_struct
 
 struct color_entry
 {
-	uint8_t red;
-	uint8_t green;
 	uint8_t blue;
+	uint8_t green;
+	uint8_t red;
 	uint8_t reserved;
 };
 
@@ -55,6 +55,12 @@ bool load_bmp(Image** p_image, FILE* file)
 		return false;
 	}
 
+	if (fseek(file, fileheader.data_offset, SEEK_SET) != 0)
+	{
+		free(color_table);
+		return false;
+	}
+
 	Image* image = image_create(infoheader.width, infoheader.height);
 	if (image == NULL)
 	{
@@ -62,8 +68,30 @@ bool load_bmp(Image** p_image, FILE* file)
 		return false;
 	}
 
-	// TODO
+	uint32_t row_width = (infoheader.width * infoheader.bits_per_pixel + 7) / 8;
+	row_width += 4 - row_width % 4;
+	uint8_t* row = (uint8_t*)malloc(row_width * sizeof(uint8_t));
+	if (row == NULL)
+	{
+		free(image);
+		free(color_table);
+		return false;
+	}
 
+	uint32_t ptr = 0;
+	while (fread(row, sizeof(uint8_t), row_width, file) == row_width)
+	{
+		uint64_t bitptr = 0;
+		while (bitptr < 8 * row_width)
+		{
+			uint64_t bitendptr = bitptr + infoheader.bits_per_pixel;
+			uint32_t pixeldata = 0; // TODO
+			image->pixels[ptr++] = (infoheader.bits_per_pixel > 8) ? pixeldata : color_table[pixeldata];
+			bitptr = bitendptr;
+		}
+	}
+
+	free(row);
 	free(color_table);
 	*p_image = image;
 

@@ -6,7 +6,9 @@
 
 typedef struct pixel_struct
 {
-	uint8_t r, g, b;
+	uint8_t blue;
+	uint8_t green;
+	uint8_t red;
 } Pixel;
 
 typedef struct image_struct
