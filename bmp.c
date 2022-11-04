@@ -45,7 +45,7 @@ static bool bmp_check_file_validity(struct file_header_struct* fileheader)
 
 static bool bmp_check_info_validity(struct info_header_struct* infoheader)
 {
-	if (!(infoheader->header_size == 40 && infoheader->planes == 1))
+	if (!(infoheader->planes == 1))
 		return false;
 
 	if (!(infoheader->colors_used == 0 && infoheader->important_colors == 0 ||
@@ -71,17 +71,73 @@ static uint32_t bmp_calculate_row_width(uint32_t width, uint16_t bits_per_pixel)
 	return ((width * bits_per_pixel + 31) / 32) * 4;
 }
 
+
+// TODO: Read and write for a struct should be one single function requiring a function pointer?
+static bool bmp_read_file_header(struct file_header_struct* p_fileheader, FILE* file)
+{
+	return (
+		fread(&p_fileheader->signature, sizeof(p_fileheader->signature), 1, file) == 1 &&
+		fread(&p_fileheader->file_size, sizeof(p_fileheader->file_size), 1, file) == 1 &&
+		fread(&p_fileheader->reserved, sizeof(p_fileheader->reserved), 1, file) == 1 &&
+		fread(&p_fileheader->data_offset, sizeof(p_fileheader->data_offset), 1, file) == 1
+	);
+}
+
+static bool bmp_write_file_header(struct file_header_struct* p_fileheader, FILE* file)
+{
+	return (
+		fwrite(&p_fileheader->signature, sizeof(p_fileheader->signature), 1, file) == 1 &&
+		fwrite(&p_fileheader->file_size, sizeof(p_fileheader->file_size), 1, file) == 1 &&
+		fwrite(&p_fileheader->reserved, sizeof(p_fileheader->reserved), 1, file) == 1 &&
+		fwrite(&p_fileheader->data_offset, sizeof(p_fileheader->data_offset), 1, file) == 1
+	);
+}
+
+static bool bmp_read_info_header(struct info_header_struct* p_infoheader, FILE* file)
+{
+	return (
+		fread(&p_infoheader->header_size, sizeof(p_infoheader->header_size), 1, file) == 1 &&
+		fread(&p_infoheader->width, sizeof(p_infoheader->width), 1, file) == 1 &&
+		fread(&p_infoheader->height, sizeof(p_infoheader->height), 1, file) == 1 &&
+		fread(&p_infoheader->planes, sizeof(p_infoheader->planes), 1, file) == 1 &&
+		fread(&p_infoheader->bits_per_pixel, sizeof(p_infoheader->bits_per_pixel), 1, file) == 1 &&
+		fread(&p_infoheader->compression, sizeof(p_infoheader->compression), 1, file) == 1 &&
+		fread(&p_infoheader->image_size, sizeof(p_infoheader->image_size), 1, file) == 1 &&
+		fread(&p_infoheader->x_pixels_per_m, sizeof(p_infoheader->x_pixels_per_m), 1, file) == 1 &&
+		fread(&p_infoheader->y_pixels_per_m, sizeof(p_infoheader->y_pixels_per_m), 1, file) == 1 &&
+		fread(&p_infoheader->colors_used, sizeof(p_infoheader->colors_used), 1, file) == 1 &&
+		fread(&p_infoheader->important_colors, sizeof(p_infoheader->important_colors), 1, file) == 1
+	);
+}
+
+static bool bmp_write_info_header(struct info_header_struct* p_infoheader, FILE* file)
+{
+	return (
+		fwrite(&p_infoheader->header_size, sizeof(p_infoheader->header_size), 1, file) == 1 &&
+		fwrite(&p_infoheader->width, sizeof(p_infoheader->width), 1, file) == 1 &&
+		fwrite(&p_infoheader->height, sizeof(p_infoheader->height), 1, file) == 1 &&
+		fwrite(&p_infoheader->planes, sizeof(p_infoheader->planes), 1, file) == 1 &&
+		fwrite(&p_infoheader->bits_per_pixel, sizeof(p_infoheader->bits_per_pixel), 1, file) == 1 &&
+		fwrite(&p_infoheader->compression, sizeof(p_infoheader->compression), 1, file) == 1 &&
+		fwrite(&p_infoheader->image_size, sizeof(p_infoheader->image_size), 1, file) == 1 &&
+		fwrite(&p_infoheader->x_pixels_per_m, sizeof(p_infoheader->x_pixels_per_m), 1, file) == 1 &&
+		fwrite(&p_infoheader->y_pixels_per_m, sizeof(p_infoheader->y_pixels_per_m), 1, file) == 1 &&
+		fwrite(&p_infoheader->colors_used, sizeof(p_infoheader->colors_used), 1, file) == 1 &&
+		fwrite(&p_infoheader->important_colors, sizeof(p_infoheader->important_colors), 1, file) == 1
+	);
+}
+
 bool bmp_load(Image** p_image, FILE* file)
 {
 	struct file_header_struct fileheader;
-	if (fread(&fileheader, FILE_HEADER_SIZE, 1, file) != 1)
+	if (!bmp_read_file_header(&fileheader, file))
 		return false;
 
 	if (!bmp_check_file_validity(&fileheader))
 		return false;
 
 	struct info_header_struct infoheader;
-	if (fread(&infoheader, INFO_HEADER_SIZE, 1, file) != 1)
+	if (!bmp_read_info_header(&infoheader, file))
 		return false;
 
 	if (!bmp_check_info_validity(&infoheader))
@@ -183,14 +239,14 @@ bool bmp_store(Image** p_image, FILE* file)
 		.data_offset = FILE_HEADER_SIZE + INFO_HEADER_SIZE
 	};
 
-	if (fwrite(&fileheader, FILE_HEADER_SIZE, 1, file) != 1)
+	if (!bmp_write_file_header(&fileheader, file))
 		return false;
 
-	if (fwrite(&infoheader, INFO_HEADER_SIZE, 1, file) != 1)
+	if (!bmp_write_info_header(&infoheader, file))
 		return false;
 
 	uint32_t padding_size = row_width - infoheader.width * 3;
-	uint8_t* padding = (uint8_t)calloc(padding_size, sizeof(uint8_t));
+	uint8_t* padding = (uint8_t*)calloc(padding_size, sizeof(uint8_t));
 	if (padding == NULL)
 		return false;
 
