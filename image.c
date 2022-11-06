@@ -49,9 +49,7 @@ bool image_scale(Image* image, float horizontal, float vertical)
 
 	Pixel* pixels = (Pixel*)malloc(new_width * new_height * sizeof(Pixel));
 	if (pixels == NULL)
-	{
 		return false;
-	}
 
 	for (uint32_t y_new = 0; y_new < new_height; y_new++)
 	{
@@ -71,7 +69,7 @@ bool image_scale(Image* image, float horizontal, float vertical)
 	return true;
 }
 
-void swap_pixels(Pixel* p_pixel1, Pixel* p_pixel2)
+static void swap_pixels(Pixel* p_pixel1, Pixel* p_pixel2)
 {
 	Pixel temp = *p_pixel1;
 	*p_pixel1 = *p_pixel2;
@@ -94,13 +92,92 @@ bool image_mirror_y(Image* image)
 	return true;
 }
 
+static void pixel_apply_kernel(Pixel* dst, Pixel* src, uint32_t width, uint32_t height, float coeff, const int kernel[3][3])
+{
+	for (uint32_t y = 0; y < height - 2; y++)
+	{
+		for (uint32_t x = 0; x < width - 2; x++)
+		{
+			int blue = 0, green = 0, red = 0;
+
+			for (uint32_t i = 0; i < 3; i++)
+			{
+				for (uint32_t j = 0; j < 3; j++)
+				{
+					blue += kernel[i][j] * src[(y + i) * width + (x + j)].blue;
+					green += kernel[i][j] * src[(y + i) * width + (x + j)].green;
+					red += kernel[i][j] * src[(y + i) * width + (x + j)].red;
+				}
+			}
+
+			Pixel pixel = { .blue = blue * coeff, .green = green * coeff, .red = red * coeff };
+
+			dst[(y + 1) * width + (x + 1)] = pixel;
+		}
+	}
+
+	for (uint32_t y = 0; y < height; y++)
+	{
+		dst[y * width + 0] = src[y * width + 0];
+		dst[y * width + width - 1] = src[y * width + width - 1];
+	}
+
+	for (uint32_t x = 0; x < width; x++)
+	{
+		dst[0 * width + x] = src[0 * width + x];
+		dst[(height - 1) * width + x] = src[(height - 1) * width + x];
+	}
+}
+
 bool image_blur(Image* image, int value)
 {
-	/* TODO */
+	static const int blur[3][3] = {
+		1, 2, 1,
+		2, 4, 2,
+		1, 2, 1
+	};
+	static const int sharpen[3][3] = {
+		0, -1, 0,
+		-1, 5, -1,
+		0, -1, 0
+	};
+
+	if (value == 0)
+		return true;
+
+	Pixel* src = image->pixels;
+	Pixel* dst = (Pixel*)malloc(image->width * image->height * sizeof(Pixel));
+	if (dst == NULL)
+		return false;
+
+	float coeff = 1.0 / 16.0;
+	int (*kernel)[3] = blur;
+	if (value < 0)
+	{
+		coeff = 1.0;
+		kernel = sharpen;
+		value *= -1;
+	}
+
+	for (;;)
+	{
+		pixel_apply_kernel(dst, src, image->width, image->height, coeff, kernel);
+		value -= 1;
+		if (value == 0)
+			break;
+		Pixel* tmp = dst;
+		dst = src;
+		src = tmp;
+	}
+
+	image->pixels = dst;
+
+	free(src);
+
 	return true;
 }
 
-static uint8_t image_limit_pixel_component(int component)
+static uint8_t limit_pixel_component(int component)
 {
 	return (component < 0) ? 0 : (component > 255) ? 255 : component;
 }
@@ -113,9 +190,9 @@ bool image_exposure(Image* image, int value)
 		{
 			Pixel pixel = image->pixels[y * image->width + x];
 
-			pixel.blue = image_limit_pixel_component(pixel.blue + value);
-			pixel.green = image_limit_pixel_component(pixel.green + value);
-			pixel.red = image_limit_pixel_component(pixel.red + value);
+			pixel.blue = limit_pixel_component(pixel.blue + value);
+			pixel.green = limit_pixel_component(pixel.green + value);
+			pixel.red = limit_pixel_component(pixel.red + value);
 
 			image->pixels[y * image->width + x] = pixel;
 		}

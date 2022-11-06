@@ -73,7 +73,7 @@ static uint32_t bmp_calculate_row_width(uint32_t width, uint16_t bits_per_pixel)
 	return ((width * bits_per_pixel + 31) / 32) * 4;
 }
 
-// TODO: Read and write for a struct should be one single function requiring a function pointer?
+/* TODO: Read and write for a struct should be one single function requiring a function pointer? */
 static bool bmp_read_file_header(struct file_header_struct* p_fileheader, FILE* file)
 {
 	return (
@@ -235,7 +235,7 @@ bool bmp_store(Image** p_image, FILE* file)
 	Image* image = *p_image;
 
 	struct info_header_struct infoheader = {
-		.header_size = 40,
+		.header_size = INFO_HEADER_SIZE,
 		.width = image->width,
 		.height = image->height,
 		.planes = 1,
