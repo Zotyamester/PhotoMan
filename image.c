@@ -6,6 +6,8 @@
 
 Image* image_create(uint32_t width, uint32_t height)
 {
+	debugmalloc_max_block_size(7680 * 4320 * sizeof(Pixel));
+
 	Image* image = (Image*)malloc(sizeof(Image));
 	if (image == NULL)
 		return NULL;
@@ -30,8 +32,18 @@ void image_destroy(Image* image)
 	free(image);
 }
 
+static bool is_divisible(uint32_t dimension, float scale)
+{
+	uint32_t quotient = dimension / scale;
+	uint32_t original = quotient * scale;
+	return original == dimension;
+}
+
 bool image_scale(Image* image, float horizontal, float vertical)
 {
+	if (!(is_divisible(image->width, horizontal) && is_divisible(image->height, vertical)))
+		return false;
+
 	uint32_t new_width = image->width * horizontal;
 	uint32_t new_height = image->height * vertical;
 
@@ -41,15 +53,13 @@ bool image_scale(Image* image, float horizontal, float vertical)
 		return false;
 	}
 
-	for (uint32_t y = 0; y < new_height; y++)
+	for (uint32_t y_new = 0; y_new < new_height; y_new++)
 	{
-		for (uint32_t x = 0; x < new_width; x++)
+		uint32_t y_old = y_new / vertical;
+		for (uint32_t x_new = 0; x_new < new_width; x_new++)
 		{
-			//Pixel pixel;
-
-			/* TODO */
-
-			//pixels[y * new_width + x] = pixel;
+			uint32_t x_old = x_new / horizontal;
+			pixels[y_new * new_width + x_new] = image->pixels[y_old * image->width + x_old];
 		}
 	}
 
