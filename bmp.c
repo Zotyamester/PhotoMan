@@ -6,6 +6,8 @@
 
 #include "debugmalloc.h"
 
+#define BMP_SIGNATURE 19778
+
 #define FILE_HEADER_SIZE 14
 #define INFO_HEADER_SIZE 40
 
@@ -42,7 +44,7 @@ struct color_entry
 
 static bool bmp_check_file_validity(struct file_header_struct* fileheader)
 {
-	return fileheader->signature == 19778;
+	return fileheader->signature == BMP_SIGNATURE;
 }
 
 static bool bmp_check_info_validity(struct info_header_struct* infoheader)
@@ -73,7 +75,6 @@ static uint32_t bmp_calculate_row_width(uint32_t width, uint16_t bits_per_pixel)
 	return ((width * bits_per_pixel + 31) / 32) * 4;
 }
 
-/* TODO: Read and write for a struct should be one single function requiring a function pointer? */
 static bool bmp_read_file_header(struct file_header_struct* p_fileheader, FILE* file)
 {
 	return (
@@ -128,19 +129,14 @@ static bool bmp_write_info_header(struct info_header_struct* p_infoheader, FILE*
 		);
 }
 
-static uint32_t min_u32(uint32_t a, uint32_t b)
-{
-	return (a < b) ? a : b;
-}
-
-static uint32_t cut_bitseq_from_u32_array(uint32_t *array, uint64_t start, uint16_t size)
+static uint32_t cut_bitseq_from_u32_array(const uint32_t *array, uint64_t start, uint16_t size)
 {
 	const uint32_t from = start;
 	const uint32_t to = start + size;
 
 	const uint32_t from_idx = from / 32;
 	const uint32_t from_offset = from % 32;
-	const uint32_t from_size = min_u32(size, 32 - from % 32);
+	const uint32_t from_size = (size < (32 - from % 32)) ? size : (32 - from % 32);
 
 	uint32_t bitseq = 0;
 	
@@ -165,17 +161,13 @@ static uint32_t cut_bitseq_from_u32_array(uint32_t *array, uint64_t start, uint1
 bool bmp_load(Image** p_image, FILE* file)
 {
 	struct file_header_struct fileheader;
-	if (!bmp_read_file_header(&fileheader, file))
-		return false;
-
-	if (!bmp_check_file_validity(&fileheader))
+	if (!bmp_read_file_header(&fileheader, file) ||
+		!bmp_check_file_validity(&fileheader))
 		return false;
 
 	struct info_header_struct infoheader;
-	if (!bmp_read_info_header(&infoheader, file))
-		return false;
-
-	if (!bmp_check_info_validity(&infoheader))
+	if (!bmp_read_info_header(&infoheader, file) ||
+		!bmp_check_info_validity(&infoheader))
 		return false;
 
 	struct color_entry* color_table = NULL;
@@ -217,8 +209,8 @@ bool bmp_load(Image** p_image, FILE* file)
 	uint32_t ptr = 0;
 	while (fread(row, sizeof(uint8_t), row_width, file) == row_width)
 	{
-		uint64_t bitptr = 0;
-		while (bitptr < infoheader.width * infoheader.bits_per_pixel)
+		
+		for (uint64_t bitptr = 0; bitptr < infoheader.width * infoheader.bits_per_pixel; bitptr += infoheader.bits_per_pixel)
 		{
 			Pixel pixel;
 
@@ -245,9 +237,7 @@ bool bmp_load(Image** p_image, FILE* file)
 				pixel.red = (pixeldata >>= 8);
 			}
 
-
 			image->pixels[ptr++] = pixel;
-			bitptr += infoheader.bits_per_pixel;
 		}
 	}
 
@@ -280,7 +270,7 @@ bool bmp_store(Image** p_image, FILE* file)
 	infoheader.image_size = infoheader.height * row_width;
 
 	struct file_header_struct fileheader = {
-		.signature = 19778,
+		.signature = BMP_SIGNATURE,
 		.file_size = FILE_HEADER_SIZE + INFO_HEADER_SIZE + infoheader.image_size,
 		.reserved = 0,
 		.data_offset = FILE_HEADER_SIZE + INFO_HEADER_SIZE
