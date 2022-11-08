@@ -128,6 +128,40 @@ static bool bmp_write_info_header(struct info_header_struct* p_infoheader, FILE*
 		);
 }
 
+static uint32_t min_u32(uint32_t a, uint32_t b)
+{
+	return (a < b) ? a : b;
+}
+
+static uint32_t cut_bitseq_from_u32_array(uint32_t *array, uint64_t start, uint16_t size)
+{
+	const uint32_t from = start;
+	const uint32_t to = start + size;
+
+	const uint32_t from_idx = from / 32;
+	const uint32_t from_offset = from % 32;
+	const uint32_t from_size = min_u32(size, 32 - from % 32);
+
+	uint32_t bitseq = 0;
+	
+	const uint32_t lowerbits = (array[from_idx] >> from_offset) & ((1 << from_size) - 1);
+
+	bitseq |= lowerbits;
+
+	if (from_size < size)
+	{
+		const uint32_t to_idx = to / 32;
+		const uint32_t to_offset = 0;
+		const uint32_t to_size = to % 32;
+
+		const uint32_t higherbits = (array[to_idx] >> to_offset) & ((1 << to_size) - 1);
+
+		bitseq |= higherbits << from_size;
+	}
+
+	return bitseq;
+}
+
 bool bmp_load(Image** p_image, FILE* file)
 {
 	struct file_header_struct fileheader;
@@ -187,10 +221,8 @@ bool bmp_load(Image** p_image, FILE* file)
 		while (bitptr < infoheader.width * infoheader.bits_per_pixel)
 		{
 			Pixel pixel;
-			uint64_t bitendptr = bitptr + infoheader.bits_per_pixel;
 
-			/* TODO: probably needs some refactoring */
-			uint32_t pixeldata = (row[bitptr / 32] >> (bitptr % 32)) & ((1 << infoheader.bits_per_pixel) - 1);
+			uint32_t pixeldata = cut_bitseq_from_u32_array(row, bitptr, infoheader.bits_per_pixel);
 			if (infoheader.bits_per_pixel == 1)
 			{
 				/* a monochrome image has exactly one color in the table, so we either display that or nothing (black) */
@@ -199,27 +231,23 @@ bool bmp_load(Image** p_image, FILE* file)
 				pixel.green = pixeldata * color->green;
 				pixel.red = pixeldata * color->red;
 			}
+			else if (infoheader.bits_per_pixel <= 8)
+			{
+				struct color_entry* color = &color_table[pixeldata];
+				pixel.blue = color->blue;
+				pixel.green = color->green;
+				pixel.red = color->red;
+			}
 			else
 			{
-				pixeldata |= (row[bitendptr / 32] & ((1 << (bitendptr % 32)) - 1)) << (32 - bitptr % 32);
-				if (infoheader.bits_per_pixel <= 8)
-				{
-					struct color_entry* color = &color_table[pixeldata];
-					pixel.blue = color->blue;
-					pixel.green = color->green;
-					pixel.red = color->red;
-				}
-				else
-				{
-					pixel.blue = (pixeldata) & 0xFF;
-					pixel.green = (pixeldata >>= 8) & 0xFF;
-					pixel.red = (pixeldata >>= 8);
-				}
+				pixel.blue = (pixeldata) & 0xFF;
+				pixel.green = (pixeldata >>= 8) & 0xFF;
+				pixel.red = (pixeldata >>= 8);
 			}
 
 
 			image->pixels[ptr++] = pixel;
-			bitptr = bitendptr;
+			bitptr += infoheader.bits_per_pixel;
 		}
 	}
 
