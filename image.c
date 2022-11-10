@@ -39,7 +39,7 @@ static bool is_divisible(uint32_t dimension, float scale)
 	return original == dimension;
 }
 
-bool image_scale(Image* image, float horizontal, float vertical)
+int image_scale(Image* image, float horizontal, float vertical)
 {
 	if (!(is_divisible(image->width, horizontal) && is_divisible(image->height, vertical)))
 		return false;
@@ -76,7 +76,7 @@ static void swap_pixels(Pixel* p_pixel1, Pixel* p_pixel2)
 	*p_pixel2 = temp;
 }
 
-bool image_mirror_x(Image* image)
+int image_mirror_x(Image* image)
 {
 	for (uint32_t x = 0; x < image->width; x++)
 		for (uint32_t y = 0; y < image->height / 2; y++)
@@ -84,7 +84,7 @@ bool image_mirror_x(Image* image)
 	return true;
 }
 
-bool image_mirror_y(Image* image)
+int image_mirror_y(Image* image)
 {
 	for (uint32_t y = 0; y < image->height; y++)
 		for (uint32_t x = 0; x < image->width / 2; x++)
@@ -129,7 +129,8 @@ static void pixel_apply_kernel(Pixel* dst, Pixel* src, uint32_t width, uint32_t 
 	}
 }
 
-bool image_blur(Image* image, int value)
+/* TODO: reménytelenül lassú nagy value-kra, sharpening nem mûködik */
+int image_blur(Image* image, int value)
 {
 	static const int blur[3][3] = {
 		1, 2, 1,
@@ -182,7 +183,7 @@ static uint8_t limit_pixel_component(int component)
 	return (component < 0) ? 0 : (component > 255) ? 255 : component;
 }
 
-bool image_exposure(Image* image, int value)
+int image_exposure(Image* image, int value)
 {
 	for (uint32_t y = 0; y < image->height; y++)
 	{

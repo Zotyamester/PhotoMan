@@ -6,6 +6,9 @@
 
 #include "debugmalloc.h"
 
+/* TODO: prog. és(?) felh. DOKUMENTÁCIÓ!!!!! */
+/* TODO: ha minden kész, és maradt idõ: platformfüggetlenné tétel! */
+
 int main(int argc, char* argv[])
 {
 	Status status = OK;

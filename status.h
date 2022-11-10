@@ -1,6 +1,14 @@
 #ifndef STATUS_H_INCLUDED
 #define STATUS_H_INCLUDED
 
+/* TODO: státuszkezelést át kéne variálni:
+ * - int-ekkel térjenek vissza a függvények
+ * - a modulok külön hibakódokkal és hibakódot szöveggé alakító függvénnyel (vagy kódokat szöveggé mappelõ tömbbel?) rendelkezzenekû
+ * - status_enum ne legyen
+ */
+
+#define NOERR 10000
+
 typedef enum status_enum
 {
 	OK = 0,

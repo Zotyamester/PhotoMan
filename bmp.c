@@ -42,6 +42,7 @@ struct color_entry
 	uint8_t reserved;
 };
 
+/* TODO: értelmesebb validálás, esetleg külön modulba áthelyezve?*/
 static bool bmp_check_file_validity(struct file_header_struct* fileheader)
 {
 	return fileheader->signature == BMP_SIGNATURE;
@@ -158,7 +159,7 @@ static uint32_t cut_bitseq_from_u32_array(const uint32_t *array, uint64_t start,
 	return bitseq;
 }
 
-bool bmp_load(Image** p_image, FILE* file)
+int bmp_load(Image** p_image, FILE* file)
 {
 	struct file_header_struct fileheader;
 	if (!bmp_read_file_header(&fileheader, file) ||
@@ -248,7 +249,7 @@ bool bmp_load(Image** p_image, FILE* file)
 	return true;
 }
 
-bool bmp_store(Image** p_image, FILE* file)
+int bmp_store(Image** p_image, FILE* file)
 {
 	Image* image = *p_image;
 
