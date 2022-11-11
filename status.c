@@ -1,35 +1,29 @@
 #include "status.h"
+#include "image.h"
+#include "bmp.h"
 
 #include <stdio.h>
 
 #include "debugmalloc.h"
 
-void status_print(Status code)
+char* status_error_code_strings[] = {
+	"Nincs hiba.",
+	"Nincs eleg memoria.",
+	"I/O hiba."
+};
+
+void status_print(int code)
 {
-	switch (code)
-	{
-	case OK:
-		break;
-	case SHOW_HELP:
-		puts("Usage: photoman <img_in> <img_out> [options]");
-		break;
-	case TOO_FEW_ARGUMENTS:
-		fputs("Too few arguments.", stderr);
-		break;
-	case UNABLE_TO_OPEN_FILE:
-		perror("Cannot open file");
-		break;
-	case CANNOT_LOAD_FILE:
-		fputs("Cannot load file", stderr);
-		break;
-	case CANNOT_SAVE_FILE:
-		fputs("Cannot save file", stderr);
-		break;
-	case CANNOT_EXECUTE_COMMAND:
-		fputs("Cannot execute command", stderr);
-		break;
-	default:
-		printf("Not implemented yet. (%s : %d)\n", __FILE__, __LINE__);
-		break;
-	}
+	const char* error_string;
+
+	if (code >= STATUS_ERROR_OFFSET && code < STATUS_ERROR_OFFSET + 1000)
+		error_string = status_error_code_strings[code - STATUS_ERROR_OFFSET];
+	else if (code >= IMAGE_ERROR_OFFSET && code < IMAGE_ERROR_OFFSET + 1000)
+		error_string = image_error_code_strings[code - IMAGE_ERROR_OFFSET];
+	else if (code >= BMP_ERROR_OFFSET && code < BMP_ERROR_OFFSET + 1000)
+		error_string = bmp_error_code_strings[code - BMP_ERROR_OFFSET];
+	else
+		error_string = "Ismeretlen hibakod.";
+
+	printf("HIBA_%d: %s\n", code, error_string);
 }

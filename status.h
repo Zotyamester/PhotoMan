@@ -1,25 +1,20 @@
 #ifndef STATUS_H_INCLUDED
 #define STATUS_H_INCLUDED
 
-/* TODO: státuszkezelést át kéne variálni:
- * - int-ekkel térjenek vissza a függvények
- * - a modulok külön hibakódokkal és hibakódot szöveggé alakító függvénnyel (vagy kódokat szöveggé mappelõ tömbbel?) rendelkezzenekû
+/* TODO: stÃ¡tuszkezelÃ©st Ã¡t kÃ©ne variÃ¡lni:
+ * - int-ekkel tÃ©rjenek vissza a fÃ¼ggvÃ©nyek
+ * - a modulok kÃ¼lÃ¶n hibakÃ³dokkal Ã©s hibakÃ³dot szÃ¶veggÃ© alakÃ­tÃ³ fÃ¼ggvÃ©nnyel (vagy kÃ³dokat szÃ¶veggÃ© mappelÅ‘ tÃ¶mbbel?) rendelkezzenekÅ±
  * - status_enum ne legyen
  */
 
-#define NOERR 10000
+#define STATUS_ERROR_OFFSET 0000
 
-typedef enum status_enum
-{
-	OK = 0,
-	SHOW_HELP,
-	TOO_FEW_ARGUMENTS,
-	UNABLE_TO_OPEN_FILE,
-	CANNOT_LOAD_FILE,
-	CANNOT_SAVE_FILE,
-	CANNOT_EXECUTE_COMMAND
-} Status;
+#define NO_ERROR		    0000
+#define MEMORY_ERROR	    0001
+#define IO_ERROR		    0002
 
-void status_print(Status code);
+extern char* status_error_code_strings[];
+
+void status_print(int code);
 
 #endif /* STATUS_H_INCLUDED */

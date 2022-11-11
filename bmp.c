@@ -1,15 +1,22 @@
 #include "bmp.h"
 #include "image.h"
+#include "status.h"
 
 #include <stdlib.h>
 #include <stdint.h>
 
 #include "debugmalloc.h"
 
-#define BMP_SIGNATURE 19778
+#define BMP_SIGNATURE			19778
 
-#define FILE_HEADER_SIZE 14
-#define INFO_HEADER_SIZE 40
+#define BMP_FILE_HEADER_SIZE	14
+#define BMP_INFO_HEADER_SIZE	40
+
+char* bmp_error_code_strings[] = {
+	"Hibas fajlalairas.",
+	"Nem tamogatott megjelenitesi beallitas.",
+	"Hibas bitmelyseg."
+};
 
 struct file_header_struct
 {
@@ -42,31 +49,32 @@ struct color_entry
 	uint8_t reserved;
 };
 
-/* TODO: értelmesebb validálás, esetleg külön modulba áthelyezve?*/
-static bool bmp_check_file_validity(struct file_header_struct* fileheader)
+/* TODO: Ã©rtelmesebb validÃ¡lÃ¡s, esetleg kÃ¼lÃ¶n modulba Ã¡thelyezve?*/
+static int bmp_check_file_validity(struct file_header_struct* fileheader)
 {
-	return fileheader->signature == BMP_SIGNATURE;
+	if (fileheader->signature != BMP_SIGNATURE)
+		return BMP_INVALID_SIGNATURE;
+	return NO_ERROR;
 }
 
-static bool bmp_check_info_validity(struct info_header_struct* infoheader)
+static int bmp_check_info_validity(struct info_header_struct* infoheader)
 {
-	if (!(infoheader->planes == 1))
-		return false;
+	if (infoheader->planes != 1)
+		return BMP_TOO_MANY_PLANES;
 
-	if (!(infoheader->colors_used == 0 && infoheader->important_colors == 0 ||
-		infoheader->important_colors <= infoheader->colors_used))
-		return false;
+	if (!(infoheader->important_colors >= 0 && infoheader->important_colors <= infoheader->colors_used))
+		return BMP_INVALID_COLORS;
 
 	switch (infoheader->bits_per_pixel)
 	{
 	case 1:
-		return infoheader->colors_used == 1;
+		return (infoheader->colors_used == 1) ? NO_ERROR : BMP_INVALID_COLORS;
 	case 4: case 8:
-		return infoheader->colors_used == 1 << infoheader->bits_per_pixel;
+		return (infoheader->colors_used == (1 << infoheader->bits_per_pixel)) ? NO_ERROR : BMP_INVALID_COLORS;
 	case 16: case 24:
-		return true;
+		return NO_ERROR;
 	default:
-		return false;
+		return BMP_INVALID_COLORS;
 	}
 }
 
@@ -76,61 +84,61 @@ static uint32_t bmp_calculate_row_width(uint32_t width, uint16_t bits_per_pixel)
 	return ((width * bits_per_pixel + 31) / 32) * 4;
 }
 
-static bool bmp_read_file_header(struct file_header_struct* p_fileheader, FILE* file)
+typedef size_t(*foperation)(void* buffer, size_t element_size, size_t element_count, FILE* stream);
+
+static int bmp_rdwr_file_header(struct file_header_struct* p_fileheader, FILE* file, foperation operation)
 {
-	return (
-		fread(&p_fileheader->signature, sizeof(p_fileheader->signature), 1, file) == 1 &&
-		fread(&p_fileheader->file_size, sizeof(p_fileheader->file_size), 1, file) == 1 &&
-		fread(&p_fileheader->reserved, sizeof(p_fileheader->reserved), 1, file) == 1 &&
-		fread(&p_fileheader->data_offset, sizeof(p_fileheader->data_offset), 1, file) == 1
-		);
+	if (
+		operation(&p_fileheader->signature, sizeof(p_fileheader->signature), 1, file) == 1 &&
+		operation(&p_fileheader->file_size, sizeof(p_fileheader->file_size), 1, file) == 1 &&
+		operation(&p_fileheader->reserved, sizeof(p_fileheader->reserved), 1, file) == 1 &&
+		operation(&p_fileheader->data_offset, sizeof(p_fileheader->data_offset), 1, file) == 1
+		)
+		return NO_ERROR;
+	return IO_ERROR;
 }
 
-static bool bmp_write_file_header(struct file_header_struct* p_fileheader, FILE* file)
+static int bmp_read_file_header(struct file_header_struct* p_fileheader, FILE* file)
 {
-	return (
-		fwrite(&p_fileheader->signature, sizeof(p_fileheader->signature), 1, file) == 1 &&
-		fwrite(&p_fileheader->file_size, sizeof(p_fileheader->file_size), 1, file) == 1 &&
-		fwrite(&p_fileheader->reserved, sizeof(p_fileheader->reserved), 1, file) == 1 &&
-		fwrite(&p_fileheader->data_offset, sizeof(p_fileheader->data_offset), 1, file) == 1
-		);
+	return bmp_rdwr_file_header(p_fileheader, file, fread);
 }
 
-static bool bmp_read_info_header(struct info_header_struct* p_infoheader, FILE* file)
+static int bmp_write_file_header(struct file_header_struct* p_fileheader, FILE* file)
 {
-	return (
-		fread(&p_infoheader->header_size, sizeof(p_infoheader->header_size), 1, file) == 1 &&
-		fread(&p_infoheader->width, sizeof(p_infoheader->width), 1, file) == 1 &&
-		fread(&p_infoheader->height, sizeof(p_infoheader->height), 1, file) == 1 &&
-		fread(&p_infoheader->planes, sizeof(p_infoheader->planes), 1, file) == 1 &&
-		fread(&p_infoheader->bits_per_pixel, sizeof(p_infoheader->bits_per_pixel), 1, file) == 1 &&
-		fread(&p_infoheader->compression, sizeof(p_infoheader->compression), 1, file) == 1 &&
-		fread(&p_infoheader->image_size, sizeof(p_infoheader->image_size), 1, file) == 1 &&
-		fread(&p_infoheader->x_pixels_per_m, sizeof(p_infoheader->x_pixels_per_m), 1, file) == 1 &&
-		fread(&p_infoheader->y_pixels_per_m, sizeof(p_infoheader->y_pixels_per_m), 1, file) == 1 &&
-		fread(&p_infoheader->colors_used, sizeof(p_infoheader->colors_used), 1, file) == 1 &&
-		fread(&p_infoheader->important_colors, sizeof(p_infoheader->important_colors), 1, file) == 1
-		);
+	return bmp_rdwr_file_header(p_fileheader, file, fwrite);
 }
 
-static bool bmp_write_info_header(struct info_header_struct* p_infoheader, FILE* file)
+
+static int bmp_rdwr_info_header(struct info_header_struct* p_infoheader, FILE* file, foperation operation)
 {
-	return (
-		fwrite(&p_infoheader->header_size, sizeof(p_infoheader->header_size), 1, file) == 1 &&
-		fwrite(&p_infoheader->width, sizeof(p_infoheader->width), 1, file) == 1 &&
-		fwrite(&p_infoheader->height, sizeof(p_infoheader->height), 1, file) == 1 &&
-		fwrite(&p_infoheader->planes, sizeof(p_infoheader->planes), 1, file) == 1 &&
-		fwrite(&p_infoheader->bits_per_pixel, sizeof(p_infoheader->bits_per_pixel), 1, file) == 1 &&
-		fwrite(&p_infoheader->compression, sizeof(p_infoheader->compression), 1, file) == 1 &&
-		fwrite(&p_infoheader->image_size, sizeof(p_infoheader->image_size), 1, file) == 1 &&
-		fwrite(&p_infoheader->x_pixels_per_m, sizeof(p_infoheader->x_pixels_per_m), 1, file) == 1 &&
-		fwrite(&p_infoheader->y_pixels_per_m, sizeof(p_infoheader->y_pixels_per_m), 1, file) == 1 &&
-		fwrite(&p_infoheader->colors_used, sizeof(p_infoheader->colors_used), 1, file) == 1 &&
-		fwrite(&p_infoheader->important_colors, sizeof(p_infoheader->important_colors), 1, file) == 1
-		);
+	if (
+		operation(&p_infoheader->header_size, sizeof(p_infoheader->header_size), 1, file) == 1 &&
+		operation(&p_infoheader->width, sizeof(p_infoheader->width), 1, file) == 1 &&
+		operation(&p_infoheader->height, sizeof(p_infoheader->height), 1, file) == 1 &&
+		operation(&p_infoheader->planes, sizeof(p_infoheader->planes), 1, file) == 1 &&
+		operation(&p_infoheader->bits_per_pixel, sizeof(p_infoheader->bits_per_pixel), 1, file) == 1 &&
+		operation(&p_infoheader->compression, sizeof(p_infoheader->compression), 1, file) == 1 &&
+		operation(&p_infoheader->image_size, sizeof(p_infoheader->image_size), 1, file) == 1 &&
+		operation(&p_infoheader->x_pixels_per_m, sizeof(p_infoheader->x_pixels_per_m), 1, file) == 1 &&
+		operation(&p_infoheader->y_pixels_per_m, sizeof(p_infoheader->y_pixels_per_m), 1, file) == 1 &&
+		operation(&p_infoheader->colors_used, sizeof(p_infoheader->colors_used), 1, file) == 1 &&
+		operation(&p_infoheader->important_colors, sizeof(p_infoheader->important_colors), 1, file) == 1
+		)
+		return NO_ERROR;
+	return IO_ERROR;
 }
 
-static uint32_t cut_bitseq_from_u32_array(const uint32_t *array, uint64_t start, uint16_t size)
+static int bmp_read_info_header(struct info_header_struct* p_infoheader, FILE* file)
+{
+	return bmp_rdwr_info_header(p_infoheader, file, fread);
+}
+
+static int bmp_write_info_header(struct info_header_struct* p_infoheader, FILE* file)
+{
+	return bmp_rdwr_info_header(p_infoheader, file, fwrite);
+}
+
+static uint32_t cut_bitseq_from_u32_array(const uint32_t* array, uint64_t start, uint16_t size)
 {
 	const uint32_t from = start;
 	const uint32_t to = start + size;
@@ -140,7 +148,7 @@ static uint32_t cut_bitseq_from_u32_array(const uint32_t *array, uint64_t start,
 	const uint32_t from_size = (size < (32 - from % 32)) ? size : (32 - from % 32);
 
 	uint32_t bitseq = 0;
-	
+
 	const uint32_t lowerbits = (array[from_idx] >> from_offset) & ((1 << from_size) - 1);
 
 	bitseq |= lowerbits;
@@ -159,43 +167,49 @@ static uint32_t cut_bitseq_from_u32_array(const uint32_t *array, uint64_t start,
 	return bitseq;
 }
 
+// TODO: error handling with gotos? :D
 int bmp_load(Image** p_image, FILE* file)
 {
+	int status;
+
 	struct file_header_struct fileheader;
-	if (!bmp_read_file_header(&fileheader, file) ||
-		!bmp_check_file_validity(&fileheader))
-		return false;
+
+	if ((status = bmp_read_file_header(&fileheader, file)) != NO_ERROR)
+		return status;
+	if ((status = bmp_check_file_validity(&fileheader)) != NO_ERROR)
+		return status;
 
 	struct info_header_struct infoheader;
-	if (!bmp_read_info_header(&infoheader, file) ||
-		!bmp_check_info_validity(&infoheader))
-		return false;
+	if ((status = bmp_read_info_header(&infoheader, file)) != NO_ERROR)
+		return status;
+	if ((status = bmp_check_info_validity(&infoheader)) != NO_ERROR)
+		return status;
 
 	struct color_entry* color_table = NULL;
 	if (infoheader.colors_used > 0)
 	{
 		color_table = (struct color_entry*)malloc(infoheader.colors_used * sizeof(struct color_entry));
 		if (color_table == NULL)
-			return false;
+			return MEMORY_ERROR;
 	}
 
 	if (fread(color_table, sizeof(struct color_entry), infoheader.colors_used, file) != infoheader.colors_used)
 	{
 		free(color_table);
-		return false;
+		return IO_ERROR; // TODO: check if it's actually an IO related error, and not just the lack of color table
 	}
 
 	if (fseek(file, fileheader.data_offset, SEEK_SET) != 0)
 	{
 		free(color_table);
-		return false;
+		return IO_ERROR;
 	}
 
 	Image* image = image_create(infoheader.width, infoheader.height);
 	if (image == NULL)
 	{
 		free(color_table);
-		return false;
+		return MEMORY_ERROR;
 	}
 
 	uint32_t row_width = bmp_calculate_row_width(infoheader.width, infoheader.bits_per_pixel);
@@ -204,13 +218,13 @@ int bmp_load(Image** p_image, FILE* file)
 	{
 		free(image);
 		free(color_table);
-		return false;
+		return MEMORY_ERROR;
 	}
 
-	uint32_t ptr = 0;
+	uint32_t idx = 0;
 	while (fread(row, sizeof(uint8_t), row_width, file) == row_width)
 	{
-		
+
 		for (uint64_t bitptr = 0; bitptr < infoheader.width * infoheader.bits_per_pixel; bitptr += infoheader.bits_per_pixel)
 		{
 			Pixel pixel;
@@ -238,7 +252,7 @@ int bmp_load(Image** p_image, FILE* file)
 				pixel.red = (pixeldata >>= 8);
 			}
 
-			image->pixels[ptr++] = pixel;
+			image->pixels[idx++] = pixel;
 		}
 	}
 
@@ -246,15 +260,17 @@ int bmp_load(Image** p_image, FILE* file)
 	free(color_table);
 	*p_image = image;
 
-	return true;
+	return NO_ERROR;
 }
 
 int bmp_store(Image** p_image, FILE* file)
 {
+	int status;
+
 	Image* image = *p_image;
 
 	struct info_header_struct infoheader = {
-		.header_size = INFO_HEADER_SIZE,
+		.header_size = BMP_INFO_HEADER_SIZE,
 		.width = image->width,
 		.height = image->height,
 		.planes = 1,
@@ -272,16 +288,15 @@ int bmp_store(Image** p_image, FILE* file)
 
 	struct file_header_struct fileheader = {
 		.signature = BMP_SIGNATURE,
-		.file_size = FILE_HEADER_SIZE + INFO_HEADER_SIZE + infoheader.image_size,
+		.file_size = BMP_FILE_HEADER_SIZE + BMP_INFO_HEADER_SIZE + infoheader.image_size,
 		.reserved = 0,
-		.data_offset = FILE_HEADER_SIZE + INFO_HEADER_SIZE
+		.data_offset = BMP_FILE_HEADER_SIZE + BMP_INFO_HEADER_SIZE
 	};
 
-	if (!bmp_write_file_header(&fileheader, file))
-		return false;
-
-	if (!bmp_write_info_header(&infoheader, file))
-		return false;
+	if ((status = bmp_write_file_header(&fileheader, file)) != NO_ERROR)
+		return status;
+	if ((status = bmp_write_info_header(&infoheader, file)) != NO_ERROR)
+		return status;
 
 	uint32_t padding_size = row_width - infoheader.width * 3;
 	uint8_t* padding = NULL;
@@ -289,7 +304,7 @@ int bmp_store(Image** p_image, FILE* file)
 	{
 		padding = (uint8_t*)calloc(padding_size, sizeof(uint8_t));
 		if (padding == NULL)
-			return false;
+			return MEMORY_ERROR;
 	}
 
 	for (Pixel* p_row = image->pixels; p_row < image->pixels + infoheader.height * infoheader.width; p_row += infoheader.width)
@@ -298,11 +313,11 @@ int bmp_store(Image** p_image, FILE* file)
 			fwrite(padding, sizeof(uint8_t), padding_size, file) != padding_size)
 		{
 			free(padding);
-			return false;
+			return IO_ERROR;
 		}
 	}
 
 	free(padding);
 
-	return true;
+	return NO_ERROR;
 }

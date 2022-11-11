@@ -1,8 +1,13 @@
 #include "image.h"
+#include "status.h"
 
 #include <stdlib.h>
 
 #include "debugmalloc.h"
+
+char* image_error_code_strings[] = {
+	"Hibas parameter."
+};
 
 Image* image_create(uint32_t width, uint32_t height)
 {
@@ -42,14 +47,14 @@ static bool is_divisible(uint32_t dimension, float scale)
 int image_scale(Image* image, float horizontal, float vertical)
 {
 	if (!(is_divisible(image->width, horizontal) && is_divisible(image->height, vertical)))
-		return false;
+		return IMAGE_BAD_PARAMETER;
 
 	uint32_t new_width = image->width * horizontal;
 	uint32_t new_height = image->height * vertical;
 
 	Pixel* pixels = (Pixel*)malloc(new_width * new_height * sizeof(Pixel));
 	if (pixels == NULL)
-		return false;
+		return MEMORY_ERROR;
 
 	for (uint32_t y_new = 0; y_new < new_height; y_new++)
 	{
@@ -66,7 +71,7 @@ int image_scale(Image* image, float horizontal, float vertical)
 	image->width = new_width;
 	image->height = new_height;
 
-	return true;
+	return NO_ERROR;
 }
 
 static void swap_pixels(Pixel* p_pixel1, Pixel* p_pixel2)
@@ -81,7 +86,7 @@ int image_mirror_x(Image* image)
 	for (uint32_t x = 0; x < image->width; x++)
 		for (uint32_t y = 0; y < image->height / 2; y++)
 			swap_pixels(&image->pixels[y * image->width + x], &image->pixels[(image->height - 1 - y) * image->width + x]);
-	return true;
+	return NO_ERROR;
 }
 
 int image_mirror_y(Image* image)
@@ -89,7 +94,7 @@ int image_mirror_y(Image* image)
 	for (uint32_t y = 0; y < image->height; y++)
 		for (uint32_t x = 0; x < image->width / 2; x++)
 			swap_pixels(&image->pixels[y * image->width + x], &image->pixels[y * image->width + image->width - 1 - x]);
-	return true;
+	return NO_ERROR;
 }
 
 static void pixel_apply_kernel(Pixel* dst, Pixel* src, uint32_t width, uint32_t height, float coeff, const int kernel[3][3])
@@ -129,7 +134,7 @@ static void pixel_apply_kernel(Pixel* dst, Pixel* src, uint32_t width, uint32_t 
 	}
 }
 
-/* TODO: reménytelenül lassú nagy value-kra, sharpening nem mûködik */
+/* TODO: remÃ©nytelenÃ¼l lassÃº nagy value-kra, sharpening nem mÅ±kÃ¶dik */
 int image_blur(Image* image, int value)
 {
 	static const int blur[3][3] = {
@@ -144,12 +149,12 @@ int image_blur(Image* image, int value)
 	};
 
 	if (value == 0)
-		return true;
+		return IMAGE_BAD_PARAMETER;
 
 	Pixel* src = image->pixels;
 	Pixel* dst = (Pixel*)malloc(image->width * image->height * sizeof(Pixel));
 	if (dst == NULL)
-		return false;
+		return MEMORY_ERROR;
 
 	float coeff = 1.0 / 16.0;
 	int (*kernel)[3] = blur;
@@ -175,7 +180,7 @@ int image_blur(Image* image, int value)
 
 	free(src);
 
-	return true;
+	return NO_ERROR;
 }
 
 static uint8_t limit_pixel_component(int component)
@@ -198,5 +203,5 @@ int image_exposure(Image* image, int value)
 			image->pixels[y * image->width + x] = pixel;
 		}
 	}
-	return true;
+	return NO_ERROR;
 }
