@@ -12,7 +12,7 @@
 #define BMP_FILE_HEADER_SIZE	14
 #define BMP_INFO_HEADER_SIZE	40
 
-char* bmp_error_code_strings[] = {
+const char* bmp_error_code_strings[] = {
 	"Hibas fajlalairas.",
 	"Nem tamogatott megjelenitesi beallitas.",
 	"Hibas bitmelyseg."
@@ -88,12 +88,10 @@ typedef size_t(*foperation)(void* buffer, size_t element_size, size_t element_co
 
 static int bmp_rdwr_file_header(struct file_header_struct* p_fileheader, FILE* file, foperation operation)
 {
-	if (
-		operation(&p_fileheader->signature, sizeof(p_fileheader->signature), 1, file) == 1 &&
+	if (operation(&p_fileheader->signature, sizeof(p_fileheader->signature), 1, file) == 1 &&
 		operation(&p_fileheader->file_size, sizeof(p_fileheader->file_size), 1, file) == 1 &&
 		operation(&p_fileheader->reserved, sizeof(p_fileheader->reserved), 1, file) == 1 &&
-		operation(&p_fileheader->data_offset, sizeof(p_fileheader->data_offset), 1, file) == 1
-		)
+		operation(&p_fileheader->data_offset, sizeof(p_fileheader->data_offset), 1, file) == 1)
 		return NO_ERROR;
 	return IO_ERROR;
 }
@@ -111,8 +109,7 @@ static int bmp_write_file_header(struct file_header_struct* p_fileheader, FILE* 
 
 static int bmp_rdwr_info_header(struct info_header_struct* p_infoheader, FILE* file, foperation operation)
 {
-	if (
-		operation(&p_infoheader->header_size, sizeof(p_infoheader->header_size), 1, file) == 1 &&
+	if (operation(&p_infoheader->header_size, sizeof(p_infoheader->header_size), 1, file) == 1 &&
 		operation(&p_infoheader->width, sizeof(p_infoheader->width), 1, file) == 1 &&
 		operation(&p_infoheader->height, sizeof(p_infoheader->height), 1, file) == 1 &&
 		operation(&p_infoheader->planes, sizeof(p_infoheader->planes), 1, file) == 1 &&
@@ -122,8 +119,7 @@ static int bmp_rdwr_info_header(struct info_header_struct* p_infoheader, FILE* f
 		operation(&p_infoheader->x_pixels_per_m, sizeof(p_infoheader->x_pixels_per_m), 1, file) == 1 &&
 		operation(&p_infoheader->y_pixels_per_m, sizeof(p_infoheader->y_pixels_per_m), 1, file) == 1 &&
 		operation(&p_infoheader->colors_used, sizeof(p_infoheader->colors_used), 1, file) == 1 &&
-		operation(&p_infoheader->important_colors, sizeof(p_infoheader->important_colors), 1, file) == 1
-		)
+		operation(&p_infoheader->important_colors, sizeof(p_infoheader->important_colors), 1, file) == 1)
 		return NO_ERROR;
 	return IO_ERROR;
 }
@@ -167,7 +163,6 @@ static uint32_t cut_bitseq_from_u32_array(const uint32_t* array, uint64_t start,
 	return bitseq;
 }
 
-// TODO: error handling with gotos? :D
 int bmp_load(Image** p_image, FILE* file)
 {
 	int status;
@@ -191,12 +186,12 @@ int bmp_load(Image** p_image, FILE* file)
 		color_table = (struct color_entry*)malloc(infoheader.colors_used * sizeof(struct color_entry));
 		if (color_table == NULL)
 			return MEMORY_ERROR;
-	}
 
-	if (fread(color_table, sizeof(struct color_entry), infoheader.colors_used, file) != infoheader.colors_used)
-	{
-		free(color_table);
-		return IO_ERROR; // TODO: check if it's actually an IO related error, and not just the lack of color table
+		if (fread(color_table, sizeof(struct color_entry), infoheader.colors_used, file) != infoheader.colors_used)
+		{
+			free(color_table);
+			return IO_ERROR;
+		}
 	}
 
 	if (fseek(file, fileheader.data_offset, SEEK_SET) != 0)
@@ -224,7 +219,6 @@ int bmp_load(Image** p_image, FILE* file)
 	uint32_t idx = 0;
 	while (fread(row, sizeof(uint8_t), row_width, file) == row_width)
 	{
-
 		for (uint64_t bitptr = 0; bitptr < infoheader.width * infoheader.bits_per_pixel; bitptr += infoheader.bits_per_pixel)
 		{
 			Pixel pixel;
@@ -256,9 +250,10 @@ int bmp_load(Image** p_image, FILE* file)
 		}
 	}
 
+	*p_image = image;
+
 	free(row);
 	free(color_table);
-	*p_image = image;
 
 	return NO_ERROR;
 }

@@ -5,7 +5,7 @@
 
 #include "debugmalloc.h"
 
-char* image_error_code_strings[] = {
+const char* image_error_code_strings[] = {
 	"Hibas parameter."
 };
 

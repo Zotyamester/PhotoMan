@@ -3,6 +3,7 @@
 #include "status.h"
 #include "image.h"
 #include "bmp.h"
+#include "cmd.h"
 
 #include "debugmalloc.h"
 
@@ -12,21 +13,23 @@ int main(int argc, char* argv[])
 {
 	int status = NO_ERROR;
 
-	for (int i = 1; i < argc; i++)
+	if (cmd_find_argument(argv + 1, "-h"))
 	{
-		if (strcmp(argv[i], "-h") == 0)
-		{
-			printf("Options: ...\n");
-			goto print_status;
-		}
-	}
-
-	if (argc < 3)
-	{
-		/*status = TOO_FEW_ARGUMENTS;*/
-		abort(1); // TODO
+		const char* help_string = "Hasznalat: photoman <kep_be> <kep_ki> [opciok]\n"
+			"Alapveto manipulaciot kepes vegezni egy BMP formatumu kepen.\n\n"
+			"Bemeneti vagy kimeneti fajl hijan csak a sugot kepes kiirni.\n\n"
+			"Opciok:\n"
+			"  -h: kiirja a program rovid hasznalati utmutatojat, benne foglalva az osszes kapcsolot\n"
+			"  -s<xy>=parameter: horizontalis skalazas\n"
+			"  -m<xy>: tukrozes az x/y tengelyre\n"
+			"  -b=parameter: Gauss-elmosas merteke\n"
+			"  -e=parameter: expozicio eltolasanak merteke (negativ - sotetit, pozitiv - vilagosit)";
+		puts(help_string);
 		goto print_status;
 	}
+
+	if ((status = cmd_check_argc(argc, 3)) != NO_ERROR)
+		goto print_status;
 
 	FILE* input_file = fopen(argv[1], "rb");
 	if (input_file == NULL)
@@ -49,30 +52,9 @@ int main(int argc, char* argv[])
 
 	for (int i = 3; i < argc; i++)
 	{
-		union {
-			float scale;
-			int value;
-		} param;
-
-		if (!(
-			sscanf(argv[i], "-sx=%f", &param.scale) == 1 &&
-			(status = image_scale(image, param.scale, 1.0)) == NO_ERROR ||
-			sscanf(argv[i], "-sy=%f", &param.scale) == 1 &&
-			(status = image_scale(image, 1.0, param.scale)) == NO_ERROR ||
-			strcmp(argv[i], "-mx") == 0 &&
-			(status = image_mirror_x(image)) == NO_ERROR ||
-			strcmp(argv[i], "-my") == 0 &&
-			(status = image_mirror_y(image)) == NO_ERROR ||
-			sscanf(argv[i], "-b=%d", &param.value) == 1 &&
-			(status = image_blur(image, param.value)) == NO_ERROR ||
-			sscanf(argv[i], "-e=%d", &param.value) == 1 &&
-			(status = image_exposure(image, param.value)) == NO_ERROR
-			))
-		{
-			//status = CANNOT_EXECUTE_COMMAND;
-			abort();
+		status = cmd_parse_manip_switch(image, argv[i]);
+		if (status != NO_ERROR)
 			goto destroy_image;
-		}
 	}
 
 	if ((status = bmp_store(&image, output_file)) != NO_ERROR)

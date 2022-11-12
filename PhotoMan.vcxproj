@@ -128,12 +128,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="bmp.c" />
+    <ClCompile Include="cmd.c" />
     <ClCompile Include="image.c" />
     <ClCompile Include="main.c" />
     <ClCompile Include="status.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="bmp.h" />
+    <ClInclude Include="cmd.h" />
     <ClInclude Include="debugmalloc.h" />
     <ClInclude Include="image.h" />
     <ClInclude Include="status.h" />

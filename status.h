@@ -13,7 +13,7 @@
 #define MEMORY_ERROR	    0001
 #define IO_ERROR		    0002
 
-extern char* status_error_code_strings[];
+extern const char* status_error_code_strings[];
 
 void status_print(int code);
 

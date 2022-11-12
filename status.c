@@ -1,12 +1,13 @@
 #include "status.h"
 #include "image.h"
 #include "bmp.h"
+#include "cmd.h"
 
 #include <stdio.h>
 
 #include "debugmalloc.h"
 
-char* status_error_code_strings[] = {
+const char* status_error_code_strings[] = {
 	"Nincs hiba.",
 	"Nincs eleg memoria.",
 	"I/O hiba."
@@ -22,6 +23,8 @@ void status_print(int code)
 		error_string = image_error_code_strings[code - IMAGE_ERROR_OFFSET];
 	else if (code >= BMP_ERROR_OFFSET && code < BMP_ERROR_OFFSET + 1000)
 		error_string = bmp_error_code_strings[code - BMP_ERROR_OFFSET];
+	else if (code >= CMD_ERROR_OFFSET && code < CMD_ERROR_OFFSET + 1000)
+		error_string = cmd_error_code_strings[code - CMD_ERROR_OFFSET];
 	else
 		error_string = "Ismeretlen hibakod.";
 

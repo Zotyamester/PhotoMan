@@ -4,11 +4,11 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define IMAGE_ERROR_OFFSET	1000
+#define IMAGE_ERROR_OFFSET			1000
 
-#define IMAGE_BAD_PARAMETER	1000
+#define IMAGE_BAD_PARAMETER			1000
 
-extern char* image_error_code_strings[];
+extern const char* image_error_code_strings[];
 
 typedef struct pixel_struct
 {
