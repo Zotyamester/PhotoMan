@@ -211,8 +211,8 @@ int bmp_load(Image** p_image, FILE* file)
 	uint32_t* row = (uint32_t*)malloc(row_width * sizeof(uint8_t));
 	if (row == NULL)
 	{
-		free(image);
 		free(color_table);
+		image_destroy(image);
 		return MEMORY_ERROR;
 	}
 
@@ -246,7 +246,7 @@ int bmp_load(Image** p_image, FILE* file)
 				pixel.red = (pixeldata >>= 8);
 			}
 
-			image->pixels[idx++] = pixel;
+			image->pixel_data[idx++] = pixel;
 		}
 	}
 
@@ -302,9 +302,9 @@ int bmp_store(Image** p_image, FILE* file)
 			return MEMORY_ERROR;
 	}
 
-	for (Pixel* p_row = image->pixels; p_row < image->pixels + infoheader.height * infoheader.width; p_row += infoheader.width)
+	for (Pixel** p_row = image->pixels; p_row < image->pixels + infoheader.height; p_row++)
 	{
-		if (fwrite(p_row, 3, infoheader.width, file) != infoheader.width ||
+		if (fwrite(*p_row, 3, infoheader.width, file) != infoheader.width ||
 			fwrite(padding, sizeof(uint8_t), padding_size, file) != padding_size)
 		{
 			free(padding);
