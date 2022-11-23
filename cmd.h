@@ -1,3 +1,11 @@
+/*****************************************************************//**
+ * @file   cmd.h
+ * @brief  Parancssori argumentumok kezelését és validálását végzõ
+ * függvényeket megvalósító modul fejlécfájlja.
+ * 
+ * @author Zoltán Szatmáry
+ * @date   November 2022
+ *********************************************************************/
 #ifndef CMD_H_INCLUDED
 #define CMD_H_INCLUDED
 

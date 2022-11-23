@@ -1,3 +1,11 @@
+/*****************************************************************//**
+ * @file   bmp.c
+ * @brief  A BMP formátumú képek kezelését megvalósító modul
+ * forrásfájlja.
+ *
+ * @author Zoltán Szatmáry
+ * @date   November 2022
+ *********************************************************************/
 #include "bmp.h"
 #include "image.h"
 #include "status.h"
@@ -8,24 +16,31 @@
 #include "debugmalloc.h"
 
 #define BMP_SIGNATURE			19778
+#define BMP_PLANES_VALUE		1
 
 #define BMP_FILE_HEADER_SIZE	14
 #define BMP_INFO_HEADER_SIZE	40
 
+ /* az BMP fájlok kezelésénél előjövő hibakódok szöveges reprezentációja */
 const char* bmp_error_code_strings[] = {
 	"Hibas fajlalairas.",
 	"Nem tamogatott megjelenitesi beallitas.",
 	"Hibas bitmelyseg."
 };
 
+/* BMP fájlfejlécet tároló struktúra */
 struct file_header_struct
 {
 	uint16_t signature;
+
+	uint16_t __padding; /* 4 bájtos padding (natural alignment) */
+
 	uint32_t file_size;
 	uint32_t reserved;
 	uint32_t data_offset;
 };
 
+/* BMP információs fejlécet tároló struktúra */
 struct info_header_struct
 {
 	uint32_t header_size;
@@ -41,6 +56,7 @@ struct info_header_struct
 	uint32_t important_colors;
 };
 
+/* BMP színtáblázat egy bejegyzését tároló stuktúra */
 struct color_entry
 {
 	uint8_t blue;
@@ -49,7 +65,13 @@ struct color_entry
 	uint8_t reserved;
 };
 
-/* TODO: értelmesebb validálás, esetleg külön modulba áthelyezve?*/
+/**
+ * Megvizsgálja, hogy a fájlfejléc szabványos-e.
+ * 
+ * @param fileheader A fájlfejléc.
+ * @return Amennyiben a szignatúra nem felel meg a szabványosnak,
+ * BMP_INVALID_SIGNATURE-rel, egyébként pedig NO_ERROR-ral tér vissza.
+ */
 static int bmp_check_file_validity(struct file_header_struct* fileheader)
 {
 	if (fileheader->signature != BMP_SIGNATURE)
@@ -57,12 +79,21 @@ static int bmp_check_file_validity(struct file_header_struct* fileheader)
 	return NO_ERROR;
 }
 
+/**
+ * Megvizsgálja, hogy az információs fejléc szabványos-e.
+ * 
+ * @param infoheader Az információs fejléc.
+ * @return Amennyiben sok fejléc "megjelenítés" mezője nem "képernyő"-re
+ * van állítva, BMP_TOO_MANY_PLANES-zel, ha a színekkel kapcsolatos mezők
+ * helytelenek, BMP_INVALID_COLORS-zal, egyébként pedig NO_ERROR-ral tér
+ * vissza.
+ */
 static int bmp_check_info_validity(struct info_header_struct* infoheader)
 {
-	if (infoheader->planes != 1)
+	if (infoheader->planes != BMP_PLANES_VALUE)
 		return BMP_TOO_MANY_PLANES;
 
-	if (!(infoheader->important_colors >= 0 && infoheader->important_colors <= infoheader->colors_used))
+	if (!(infoheader->important_colors <= infoheader->colors_used))
 		return BMP_INVALID_COLORS;
 
 	switch (infoheader->bits_per_pixel)
@@ -70,7 +101,7 @@ static int bmp_check_info_validity(struct info_header_struct* infoheader)
 	case 1:
 		return (infoheader->colors_used == 1) ? NO_ERROR : BMP_INVALID_COLORS;
 	case 4: case 8:
-		return (infoheader->colors_used == (1 << infoheader->bits_per_pixel)) ? NO_ERROR : BMP_INVALID_COLORS;
+		return (infoheader->colors_used == (1u << infoheader->bits_per_pixel)) ? NO_ERROR : BMP_INVALID_COLORS;
 	case 16: case 24:
 		return NO_ERROR;
 	default:
@@ -78,14 +109,31 @@ static int bmp_check_info_validity(struct info_header_struct* infoheader)
 	}
 }
 
+/**
+ * Kiszámolja egy bittérképbeli sor hosszát 4 bájtos igazítással.
+ * 
+ * @param width A sor hossza (bájtban).
+ * @param bits_per_pixel A pixelenkénti bitek száma, vagyis a bitmélység.
+ * @return Visszatér a kiszámított sorhosszal.
+ */
 static uint32_t bmp_calculate_row_width(uint32_t width, uint16_t bits_per_pixel)
 {
 	/* (count * size + 4-byte-alignment) * 4 bytes */
 	return ((width * bits_per_pixel + 31) / 32) * 4;
 }
 
+/* I/O műveletet megvalósító függvényekre mutató függvénypointer típus */
 typedef size_t(*foperation)(void* buffer, size_t element_size, size_t element_count, FILE* stream);
 
+/**
+ * Elvégez egy I/O műveletet egy fájlfejléccel.
+ * 
+ * @param p_fileheader A fájlfejlécre mutató pointer.
+ * @param file A fájl.
+ * @param operation Az elvégzendő I/O művelet (fread/fwrite).
+ * @return Sikeres lefutás esetén NO_ERROR-ral, műveletvégzés közben felmerülő
+ * I/O probléma esetén IO_ERROR-ral tér vissza.
+ */
 static int bmp_rdwr_file_header(struct file_header_struct* p_fileheader, FILE* file, foperation operation)
 {
 	if (operation(&p_fileheader->signature, sizeof(p_fileheader->signature), 1, file) == 1 &&
@@ -96,17 +144,41 @@ static int bmp_rdwr_file_header(struct file_header_struct* p_fileheader, FILE* f
 	return IO_ERROR;
 }
 
+/**
+ * Beolvas egy fájlfejlécet egy fájlból.
+ * 
+ * @param p_fileheader A fájlfejlécre mutató pointer.
+ * @param file A fájl.
+ * @return Sikeres lefutás esetén NO_ERROR-ral, beolvasás közben felmerülő
+ * I/O probléma esetén IO_ERROR-ral tér vissza.
+ */
 static int bmp_read_file_header(struct file_header_struct* p_fileheader, FILE* file)
 {
 	return bmp_rdwr_file_header(p_fileheader, file, fread);
 }
 
+/**
+ * Kiír egy fájlfejlécet egy fájlba.
+ *
+ * @param p_fileheader A fájlfejlécre mutató pointer.
+ * @param file A fájl.
+ * @return Sikeres lefutás esetén NO_ERROR-ral, kiírás közben felmerülő
+ * I/O probléma esetén IO_ERROR-ral tér vissza.
+ */
 static int bmp_write_file_header(struct file_header_struct* p_fileheader, FILE* file)
 {
 	return bmp_rdwr_file_header(p_fileheader, file, fwrite);
 }
 
-
+/**
+ * Elvégez egy I/O műveletet egy információs fejléccel.
+ *
+ * @param p_infoheader Az információs fejlécre mutató pointer.
+ * @param file A fájl.
+ * @param operation Az elvégzendő I/O művelet (fread/fwrite).
+ * @return Sikeres lefutás esetén NO_ERROR-ral, műveletvégzés közben felmerülő
+ * I/O probléma esetén IO_ERROR-ral tér vissza.
+ */
 static int bmp_rdwr_info_header(struct info_header_struct* p_infoheader, FILE* file, foperation operation)
 {
 	if (operation(&p_infoheader->header_size, sizeof(p_infoheader->header_size), 1, file) == 1 &&
@@ -124,16 +196,42 @@ static int bmp_rdwr_info_header(struct info_header_struct* p_infoheader, FILE* f
 	return IO_ERROR;
 }
 
+/**
+ * Beolvas egy információs fejlécet egy fájlból.
+ *
+ * @param p_infoheader Az információs fejlécre mutató pointer.
+ * @param file A fájl.
+ * @return Sikeres lefutás esetén NO_ERROR-ral, beolvasás közben felmerülő
+ * I/O probléma esetén IO_ERROR-ral tér vissza.
+ */
 static int bmp_read_info_header(struct info_header_struct* p_infoheader, FILE* file)
 {
 	return bmp_rdwr_info_header(p_infoheader, file, fread);
 }
 
+/**
+ * Kiír egy információs fejlécet egy fájlba.
+ *
+ * @param p_infoheader Az információs fejlécre mutató pointer.
+ * @param file A fájl.
+ * @return Sikeres lefutás esetén NO_ERROR-ral, kiírás közben felmerülő
+ * I/O probléma esetén IO_ERROR-ral tér vissza.
+ */
 static int bmp_write_info_header(struct info_header_struct* p_infoheader, FILE* file)
 {
 	return bmp_rdwr_info_header(p_infoheader, file, fwrite);
 }
 
+/**
+ * Kivág egy bitszekvenciát egy 32 bites előjel nélküli egészeket tartalmazó
+ * tömbből.
+ * 
+ * @param array A tömb.
+ * @param start A legelső kivágandó bit indexe (0-tól számozva).
+ * @param size A kivágandó bitszekvencia mérete (bitekben).
+ * @return Visszatér a kivágott bitszekvenciát nullákkal kiegészítve kapott
+ * 32 bites előjel nélküli egésszel.
+ */
 static uint32_t cut_bitseq_from_u32_array(const uint32_t* array, uint64_t start, uint16_t size)
 {
 	const uint32_t from = start;
@@ -163,6 +261,17 @@ static uint32_t cut_bitseq_from_u32_array(const uint32_t* array, uint64_t start,
 	return bitseq;
 }
 
+/**
+ * Betölt egy szabványos BMP formátumú képet egy fájlból, melyet paraméterként
+ * ad vissza a hívónak.
+ * 
+ * A lefoglalt memóriaterület felszabadítása a hívó feladata.
+ * 
+ * @param p_image A képre mutató poitner helye.
+ * @param file A fájl.
+ * @return Sikeres lefutás esetén NO_ERROR-ral, egyébként a validálások,
+ * az allokációk vagy egy I/O művelet által okozott hibakóddal tér vissza.
+ */
 int bmp_load(Image** p_image, FILE* file)
 {
 	int status;
@@ -226,7 +335,8 @@ int bmp_load(Image** p_image, FILE* file)
 			uint32_t pixeldata = cut_bitseq_from_u32_array(row, bitptr, infoheader.bits_per_pixel);
 			if (infoheader.bits_per_pixel == 1)
 			{
-				/* a monochrome image has exactly one color in the table, so we either display that or nothing (black) */
+				/* egy monokróm képnél egyetlen egy színt tárolunk a színtáblázatban,
+				szóval vagy azt a színt reprezentálja a bit vagy a feketét */
 				struct color_entry* color = &color_table[0];
 				pixel.blue = pixeldata * color->blue;
 				pixel.green = pixeldata * color->green;
@@ -258,11 +368,20 @@ int bmp_load(Image** p_image, FILE* file)
 	return NO_ERROR;
 }
 
-int bmp_store(Image** p_image, FILE* file)
+/**
+ * Kiment egy szabványos BMP formátumú képet egy fájlba, melyet paraméterként
+ * vesz át.
+ *
+ * @param p_image A képre mutató poitner helye.
+ * @param file A fájl.
+ * @return Sikeres lefutás esetén NO_ERROR-ral, egyébként az allokációk vagy
+ * egy I/O művelet által okozott hibakóddal tér vissza.
+ */
+int bmp_store(const Image** p_image, FILE* file)
 {
 	int status;
 
-	Image* image = *p_image;
+	const Image* image = *p_image;
 
 	struct info_header_struct infoheader = {
 		.header_size = BMP_INFO_HEADER_SIZE,

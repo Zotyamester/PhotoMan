@@ -1,3 +1,10 @@
+/*****************************************************************//**
+ * @file   image.h
+ * @brief  Absztrakt képek kezelését megvalósító modul fejlécfájlja.
+ * 
+ * @author Zoltán Szatmáry
+ * @date   November 2022
+ *********************************************************************/
 #ifndef IMAGE_H_INCLUDED
 #define IMAGE_H_INCLUDED
 
@@ -10,26 +17,40 @@
 
 extern const char* image_error_code_strings[];
 
+/**
+ * @brief Egy legfeljebb 24 bites, vörös, zöld és kék RGB színkomponensekbõlálló
+ * színt leíró struktúra.
+ */
 typedef struct pixel_struct
 {
-	uint8_t blue;
-	uint8_t green;
-	uint8_t red;
+	uint8_t blue; /* kék */
+	uint8_t green; /* zöld */
+	uint8_t red; /* vörös */
 } Pixel;
 
+/**
+ * @brief Egy absztrakt képstruktúra, mely egy – a 32 bites elõjel nélküli
+ * egész számábrázolási korlátjaitól eltekintve – tetszõlegesen nagy
+ * dimenziójú, legfeljebb 8 bites RGB komponensekkel rendelkezõ kép és jellemzõ
+ * paramétereinek (szélesség, magasság) egységbezárására alkalmas.
+ * 
+ * A képpontokat a címaritmetikát helyettesítõ pixels sorcím-leképzett
+ * pointertömbön keresztül is el lehet érni.
+ */
 typedef struct image_struct
 {
-	uint32_t width;
-	uint32_t height;
-	Pixel* pixel_data;
-	Pixel** pixels;
+	uint32_t width; /* képszélesség */
+	uint32_t height; /* képmagasság */
+	Pixel* pixel_data; /* pixelmátrix */
+	Pixel** pixels; /* pointertömb a pixelmátrix soraira */
 } Image;
+
+/* a képstuktúra kezelését megvalósító függvények */
 
 Image* image_create(uint32_t width, uint32_t height);
 void image_destroy(Image* image);
 
-/* TODO: implementálni vagy hagyni a csudába */
-Pixel* image_get_pixel(uint32_t row, uint32_t col);
+/* az elemi képmanipulációkat megvalósító függvények */
 
 int image_scale(Image* image, float horizontal, float vertical);
 int image_mirror_x(Image* image);

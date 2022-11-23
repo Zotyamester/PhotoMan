@@ -1,3 +1,10 @@
+/*****************************************************************//**
+ * @file   image.c
+ * @brief  Absztrakt képek kezelését megvalósító modul forrásfájlja.
+ * 
+ * @author Zoltán Szatmáry
+ * @date   November 2022
+ *********************************************************************/
 #include "image.h"
 #include "status.h"
 
@@ -5,10 +12,25 @@
 
 #include "debugmalloc.h"
 
+/* az képek kezelésénél előjövő hibakódok szöveges reprezentációja */
 const char* image_error_code_strings[] = {
 	"Hibas parameter."
 };
 
+/**
+ * Készít egy dinamikusan foglalt, width × height dimenziójú
+ * pixelmátrixot - az annak indexelését segítő pointertömbbel együtt,
+ * melyeket paraméterként ad vissza a hívónak, amennyiben sikeresek
+ * voltak a foglalások.
+ * 
+ * A lefoglalt memóriaterület felszabadítása a hívó feladata.
+ * 
+ * @param[in] width A pixelmátrix szélessége.
+ * @param[in] height A pixelmátrix magassága.
+ * @param[out] p_pixel_data A pixelmátrixra mutató pointer helye.
+ * @param[out] p_pixels A pixelmátrix pointertömbjére mutató pointer helye.
+ * @return Sikeres lefutás esetén NO_ERROR, egyébként MEMORY_ERROR.
+ */
 static int image_create_pixel_matrix(uint32_t width, uint32_t height, Pixel** p_pixel_data, Pixel*** p_pixels)
 {
 	Pixel* pixel_data = (Pixel*)malloc(width * height * sizeof(Pixel));
@@ -31,6 +53,17 @@ static int image_create_pixel_matrix(uint32_t width, uint32_t height, Pixel** p_
 	return NO_ERROR;
 }
 
+/**
+ * Készít egy dinamikusan foglalt absztrakt képet tároló sturktúrát, mely
+ * elkészítésekor egy width × height dimenziójú kép tárolására alkalmas.
+ *  
+ * A lefoglalt memóriaterület felszabadítása a hívó feladata.
+ * 
+ * @param width A kép szélessége.
+ * @param height A kép magassága.
+ * @return Sikeres lefutás esetén a dinamikusan foglalt stuktúrára mutató
+ * pointer, foglalási hiba esetén pedig NULL-pointer.
+ */
 Image* image_create(uint32_t width, uint32_t height)
 {
 	debugmalloc_max_block_size(sizeof(Image) + width * height * sizeof(Pixel) + height * sizeof(Pixel*));
@@ -51,6 +84,12 @@ Image* image_create(uint32_t width, uint32_t height)
 	return image;
 }
 
+/**
+ * Felszabadít egy dinamikusan foglalt absztrakt képet tároló struktúrát
+ * annak minden dinamikusan foglalt memóriaterületével együtt.
+ * 
+ * @param image A felszabadítandó kép sturktúrára mutató pointer.
+ */
 void image_destroy(Image* image)
 {
 	free(image->pixels);
@@ -58,6 +97,15 @@ void image_destroy(Image* image)
 	free(image);
 }
 
+/**
+ * Megadja, hogy egy dimenzió skálázása megvalósítható-e egyértelműen, vagyis
+ * hogy a dimenziót a skálázási értékkel elosztva egész szám-e a hányados.
+ * 
+ * @param dimension A dimenzió.
+ * @param scale A skálázási érték (skalár).
+ * @return Amennyiben a dimenzió skálázása egyértelmű, logikai igazzal,
+ * egyébként logikai hamissal tér vissza.
+ */
 static bool is_divisible(uint32_t dimension, float scale)
 {
 	uint32_t quotient = dimension / scale;
@@ -65,6 +113,24 @@ static bool is_divisible(uint32_t dimension, float scale)
 	return original == dimension;
 }
 
+/**
+ * Fel- vagy leskáláz egy képet megadott függőleges és vízszintes
+ * paraméterek szerint.
+ * 
+ * Az adott tengely szerint skálázás egynél nagyobb értékeknél a kép
+ * nagyítását, egynél kisebb értékekre pedig a kép kicsinyítését idézi elő.
+ * 
+ * A függvény újrafoglalhat dinamikusan memóriaterületet, ilyenkor a korábbi
+ * területeket felszabadítja, viszont az újonnan foglaltak felszabadítása
+ * továbbra is a hívó feladata marad.
+ * 
+ * @param image A feldolgozandó kép.
+ * @param horizontal A vízszintes skálázás értéke. Mindig pozitív.
+ * @param vertical A függőleges skálázás értéke. Mindig pozitív.
+ * @return Sikeres lefutás esetén NO_ERROR-ral, hibás paraméter esetén
+ * IMAGE_BAD_PARAMETER-rel, memóriafoglalási hiba esetén pedig MEMORY_ERROR-ral
+ * tér vissza.
+ */
 int image_scale(Image* image, float horizontal, float vertical)
 {
 	int status;
@@ -105,6 +171,12 @@ int image_scale(Image* image, float horizontal, float vertical)
 	return NO_ERROR;
 }
 
+/**
+ * Megcseréli két pixel értékét.
+ * 
+ * @param p_pixel1 Az egyik pixelre mutató pointer.
+ * @param p_pixel2 A másik pixelre mutató pointer.
+ */
 static void swap_pixels(Pixel* p_pixel1, Pixel* p_pixel2)
 {
 	Pixel temp = *p_pixel1;
@@ -112,6 +184,12 @@ static void swap_pixels(Pixel* p_pixel1, Pixel* p_pixel2)
 	*p_pixel2 = temp;
 }
 
+/**
+ * Tükröz egy képet az x tengelyre.
+ * 
+ * @param image A feldolgozandó kép.
+ * @return Minden esetben NO_ERROR státusszal tér vissza.
+ */
 int image_mirror_x(Image* image)
 {
 	for (uint32_t x = 0; x < image->width; x++)
@@ -120,6 +198,12 @@ int image_mirror_x(Image* image)
 	return NO_ERROR;
 }
 
+/**
+ * Tükröz egy képet az y tengelyre.
+ *
+ * @param image A feldolgozandó kép.
+ * @return Minden esetben NO_ERROR státusszal tér vissza.
+ */
 int image_mirror_y(Image* image)
 {
 	for (uint32_t y = 0; y < image->height; y++)
@@ -128,6 +212,16 @@ int image_mirror_y(Image* image)
 	return NO_ERROR;
 }
 
+/**
+ * Alkalmaz egy mátrix-szal megadott konvolúciót egy pixelmátrixra.
+ * 
+ * @param dst A cél pixelmátrix.
+ * @param src A forrás pixelmátrix.
+ * @param width A pixelmátrixok szélessége.
+ * @param height A pixelmátrixok magassága.
+ * @param coeff A konvolúciós mátrix együtthatója.
+ * @param kernel A konvolúciós mátrix.
+ */
 static void pixel_apply_kernel(Pixel** dst, Pixel** src, uint32_t width, uint32_t height, float coeff, const int kernel[3][3])
 {
 	for (uint32_t y = 0; y < height - 2; y++)
@@ -165,7 +259,16 @@ static void pixel_apply_kernel(Pixel** dst, Pixel** src, uint32_t width, uint32_
 	}
 }
 
-/* TODO: reménytelenül lassú nagy value-kra, sharpening nem működik */
+/**
+ * Elhomályosít vagy élesít egy képet megadott intenzitással.
+ * 
+ * @param image A feldolgozandó kép.
+ * @param value Az művelet intenzitása. A művelet pozitív értékek esetén
+ * elhomályosítás, negatív értékek esetén élesítés.
+ * @return Sikeres lefutás esetén NO_ERROR-ral, hibás paraméterezés esetén
+ * IMAGE_BAD_PARAMETER-rel, memóriafoglalási hiba esetén pedig
+ * MEMORY_ERROR-ral tér vissza.
+ */
 int image_blur(Image* image, int value)
 {
 	int status;
@@ -230,11 +333,25 @@ int image_blur(Image* image, int value)
 	return NO_ERROR;
 }
 
+/**
+ * Limitálja egy 32 bites előjeles egészként megadott színkomponens értékét,
+ * hogy az a 8 bites előjel nélküli számábrázolási tartományon belülre essen.
+ * 
+ * @param component A színkomponens.
+ * @return Visszatér a tartományra limitált komponenssel.
+ */
 static uint8_t limit_pixel_component(int component)
 {
 	return (component < 0) ? 0 : (component > 255) ? 255 : component;
 }
 
+/**
+ * Megnöveli, illetve lecsökkenti egy kép fényerejét megadott intenzitással.
+ * 
+ * @param image A feldolgozandó kép.
+ * @param value Az művelet intenzitása.
+ * @return Minden esetben NO_ERROR státusszal tér vissza.
+ */
 int image_exposure(Image* image, int value)
 {
 	for (uint32_t y = 0; y < image->height; y++)

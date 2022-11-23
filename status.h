@@ -1,3 +1,10 @@
+/*****************************************************************//**
+ * @file   status.h
+ * @brief  A hibakezelõ modul fejlécfájlja.
+ * 
+ * @author Zoltán Szatmáry
+ * @date   November 2022
+ *********************************************************************/
 #ifndef STATUS_H_INCLUDED
 #define STATUS_H_INCLUDED
 

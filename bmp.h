@@ -1,3 +1,11 @@
+/*****************************************************************//**
+ * @file   bmp.h
+ * @brief  A BMP formátumú képek kezelését megvalósító modul
+ * fejlécfájlja.
+ * 
+ * @author Zoltán Szatmáry
+ * @date   November 2022
+ *********************************************************************/
 #ifndef BMP_H_INCLUDED
 #define BMP_H_INCLUDED
 

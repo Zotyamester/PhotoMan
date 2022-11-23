@@ -1,3 +1,10 @@
+/*****************************************************************//**
+ * @file   main.c
+ * @brief  A fõprogram.
+ * 
+ * @author Zoltán Szatmáry
+ * @date   November 2022
+ *********************************************************************/
 #include <stdio.h>
 #include <string.h>
 #include "status.h"
@@ -7,8 +14,18 @@
 
 #include "debugmalloc.h"
 
-/* TODO: ha minden kész, és maradt idõ: platformfüggetlenné tétel! */
-
+/**
+ * A program belépési pontja.
+ * Itt történik
+ *   - az argumentumok validálása (részben),
+ *   - az erõforrások kezelése (allokátorok, deallokátorok vezérlése),
+ *   - az argumentumokban meghatározott mûveletek meghívása.
+ * @param argc Argumentumok száma beleértve a futtatható bináris nevét.
+ * @param argv A NULL-terminált arugmentumvektor.
+ * @return A program visszatérési kódja, mely sikeres lefutás esetén
+ * nulla, egyébként egy külsõ (az operációs rendszer által generált)
+ * vagy belsõ (a program által generált) hibakód.
+ */
 int main(int argc, char* argv[])
 {
 	int status = NO_ERROR;

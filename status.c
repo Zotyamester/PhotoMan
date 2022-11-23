@@ -1,3 +1,10 @@
+/*****************************************************************//**
+ * @file   status.c
+ * @brief  A hibakezelõ modul forrásfájlja.
+ *
+ * @author Zoltán Szatmáry
+ * @date   November 2022
+ *********************************************************************/
 #include "status.h"
 #include "image.h"
 #include "bmp.h"
@@ -7,12 +14,19 @@
 
 #include "debugmalloc.h"
 
+/* az általánosan definiált hibakódok szöveges reprezentációja */
 const char* status_error_code_strings[] = {
 	"Nincs hiba.",
 	"Nincs eleg memoria.",
 	"I/O hiba."
 };
 
+/**
+ * A támogatott modulok és a saját hibakódjait értelmezni és szövegesen
+ * megjeleníteni képes függvény.
+ * 
+ * @param code A konzolban megjelenítendõ hibakód.
+ */
 void status_print(int code)
 {
 	const char* error_string;
@@ -28,5 +42,5 @@ void status_print(int code)
 	else
 		error_string = "Ismeretlen hibakod.";
 
-	printf("HIBA_%d: %s\n", code, error_string);
+	fprintf(stderr, "HIBA_%d: %s\n", code, error_string);
 }
