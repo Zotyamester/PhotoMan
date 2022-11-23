@@ -1,9 +1,9 @@
-/*****************************************************************//**
+ï»¿/*****************************************************************//**
  * @file   cmd.c
- * @brief  Parancssori argumentumok kezelését és validálását végzõ
- * függvényeket megvalósító modul forrásfájlja.
+ * @brief  Parancssori argumentumok kezelÃ©sÃ©t Ã©s validÃ¡lÃ¡sÃ¡t vÃ©gzÅ‘
+ * fÃ¼ggvÃ©nyeket megvalÃ³sÃ­tÃ³ modul forrÃ¡sfÃ¡jlja.
  *
- * @author Zoltán Szatmáry
+ * @author ZoltÃ¡n SzatmÃ¡ry
  * @date   November 2022
  *********************************************************************/
 #include "cmd.h"
@@ -11,21 +11,21 @@
 
 #include <string.h>
 
-/* az argumentumok kezelésénél elõjövõ hibakódok szöveges reprezentációja */
+/* az argumentumok kezelÃ©sÃ©nÃ©l elÅ‘jÃ¶vÅ‘ hibakÃ³dok szÃ¶veges reprezentÃ¡ciÃ³ja */
 const char* cmd_error_code_strings[] = {
 	"Tul keves argumentum.",
 	"Ismeretlen parancssori kapcsolo."
 };
 
 /**
- * Megvizsgálja, hogy a parancssorból érkezõ argumentumok
- * számossága megfelel-e az elvártnak.
+ * MegvizsgÃ¡lja, hogy a parancssorbÃ³l Ã©rkezÅ‘ argumentumok
+ * szÃ¡mossÃ¡ga megfelel-e az elvÃ¡rtnak.
  *
- * @param argc A parancssori argumentumok száma.
- * @param desired Az elvárt számosság.
- * @return Az ellenõrzés eredményét tükrözõ státusszal
- * tér vissza, vagyis eltérés esetén CMD_TOO_FEW_ARGUMENTS
- * hibakóddal, egyébként pedig NO_ERROR-ral.
+ * @param argc A parancssori argumentumok szÃ¡ma.
+ * @param desired Az elvÃ¡rt szÃ¡mossÃ¡g.
+ * @return Az ellenÅ‘rzÃ©s eredmÃ©nyÃ©t tÃ¼krÃ¶zÅ‘ stÃ¡tusszal
+ * tÃ©r vissza, vagyis eltÃ©rÃ©s esetÃ©n CMD_TOO_FEW_ARGUMENTS
+ * hibakÃ³ddal, egyÃ©bkÃ©nt pedig NO_ERROR-ral.
  */
 int cmd_check_argc(int argc, int desired)
 {
@@ -33,13 +33,13 @@ int cmd_check_argc(int argc, int desired)
 }
 
 /**
- * Megvizsgálja, hogy megtalálható-e az argumentumértéket reprezentáló sztring
+ * MegvizsgÃ¡lja, hogy megtalÃ¡lhatÃ³-e az argumentumÃ©rtÃ©ket reprezentÃ¡lÃ³ sztring
  * az argumentumvektorban.
  * 
  * @param argv Az argumentumvektor.
  * @param arg A keresett sztring.
- * @return Amennyiben megtalálható a sztring a vektorban, logikai igazzal,
- * egyébként logikai hamissal tér vissza.
+ * @return Amennyiben megtalÃ¡lhatÃ³ a sztring a vektorban, logikai igazzal,
+ * egyÃ©bkÃ©nt logikai hamissal tÃ©r vissza.
  */
 bool cmd_find_argument(const char* argv[], const char* arg)
 {
@@ -49,20 +49,20 @@ bool cmd_find_argument(const char* argv[], const char* arg)
 }
 
 /**
- * Értelmezi a sztringként megadott kapcsolót, és amennyiben lehetséges,
- * végrehajtja az ahhoz társított mûveletet a megadott képen.
+ * Ã‰rtelmezi a sztringkÃ©nt megadott kapcsolÃ³t, Ã©s amennyiben lehetsÃ©ges,
+ * vÃ©grehajtja az ahhoz tÃ¡rsÃ­tott mÅ±veletet a megadott kÃ©pen.
  * 
- * @param image A feldolgozandó kép.
- * @param sw A mûvelet parancssori kapcsolóját tartalmazó sztring.
- * @return Sikeres lefutás esetén NO_ERROR-ral, egyébként a mûveletekhez
- * tartozó státuszjellel/hibakóddal, vagy CMD_UNKNOWN_CMD_SWITCH-csel
- * tér vissza, amennyiben nem ismeret vagy hibás a megadott kapcsoló.
+ * @param image A feldolgozandÃ³ kÃ©p.
+ * @param sw A mÅ±velet parancssori kapcsolÃ³jÃ¡t tartalmazÃ³ sztring.
+ * @return Sikeres lefutÃ¡s esetÃ©n NO_ERROR-ral, egyÃ©bkÃ©nt a mÅ±veletekhez
+ * tartozÃ³ stÃ¡tuszjellel/hibakÃ³ddal, vagy CMD_UNKNOWN_CMD_SWITCH-csel
+ * tÃ©r vissza, amennyiben nem ismeret vagy hibÃ¡s a megadott kapcsolÃ³.
  */
 int cmd_parse_manip_switch(Image* image, const char* sw)
 {
 	int status = NO_ERROR;
 
-	/* lokális unió típus a paraméteres kapcsolók paramétereinek tárolására */
+	/* lokÃ¡lis uniÃ³ tÃ­pus a paramÃ©teres kapcsolÃ³k paramÃ©tereinek tÃ¡rolÃ¡sÃ¡ra */
 	union switch_paramter {
 		float scale;
 		int value;

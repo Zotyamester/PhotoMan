@@ -1,8 +1,8 @@
-/*****************************************************************//**
+Ôªø/*****************************************************************//**
  * @file   status.c
- * @brief  A hibakezelı modul forr·sf·jlja.
+ * @brief  A hibakezel≈ë modul forr√°sf√°jlja.
  *
- * @author Zolt·n Szatm·ry
+ * @author Zolt√°n Szatm√°ry
  * @date   November 2022
  *********************************************************************/
 #include "status.h"
@@ -14,7 +14,7 @@
 
 #include "debugmalloc.h"
 
-/* az ·ltal·nosan defini·lt hibakÛdok szˆveges reprezent·ciÛja */
+/* az √°ltal√°nosan defini√°lt hibak√≥dok sz√∂veges reprezent√°ci√≥ja */
 const char* status_error_code_strings[] = {
 	"Nincs hiba.",
 	"Nincs eleg memoria.",
@@ -22,10 +22,10 @@ const char* status_error_code_strings[] = {
 };
 
 /**
- * A t·mogatott modulok Ès a saj·t hibakÛdjait Èrtelmezni Ès szˆvegesen
- * megjelenÌteni kÈpes f¸ggvÈny.
+ * A t√°mogatott modulok √©s a saj√°t hibak√≥djait √©rtelmezni √©s sz√∂vegesen
+ * megjelen√≠teni k√©pes f√ºggv√©ny.
  * 
- * @param code A konzolban megjelenÌtendı hibakÛd.
+ * @param code A konzolban megjelen√≠tend≈ë hibak√≥d.
  */
 void status_print(int code)
 {

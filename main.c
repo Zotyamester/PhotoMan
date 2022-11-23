@@ -1,8 +1,8 @@
-/*****************************************************************//**
+ï»¿/*****************************************************************//**
  * @file   main.c
- * @brief  A fõprogram.
+ * @brief  A fÅ‘program.
  * 
- * @author Zoltán Szatmáry
+ * @author ZoltÃ¡n SzatmÃ¡ry
  * @date   November 2022
  *********************************************************************/
 #include <stdio.h>
@@ -15,16 +15,16 @@
 #include "debugmalloc.h"
 
 /**
- * A program belépési pontja.
- * Itt történik
- *   - az argumentumok validálása (részben),
- *   - az erõforrások kezelése (allokátorok, deallokátorok vezérlése),
- *   - az argumentumokban meghatározott mûveletek meghívása.
- * @param argc Argumentumok száma beleértve a futtatható bináris nevét.
- * @param argv A NULL-terminált arugmentumvektor.
- * @return A program visszatérési kódja, mely sikeres lefutás esetén
- * nulla, egyébként egy külsõ (az operációs rendszer által generált)
- * vagy belsõ (a program által generált) hibakód.
+ * A program belÃ©pÃ©si pontja.
+ * Itt tÃ¶rtÃ©nik
+ *   - az argumentumok validÃ¡lÃ¡sa (rÃ©szben),
+ *   - az erÅ‘forrÃ¡sok kezelÃ©se (allokÃ¡torok, deallokÃ¡torok vezÃ©rlÃ©se),
+ *   - az argumentumokban meghatÃ¡rozott mÅ±veletek meghÃ­vÃ¡sa.
+ * @param argc Argumentumok szÃ¡ma beleÃ©rtve a futtathatÃ³ binÃ¡ris nevÃ©t.
+ * @param argv A NULL-terminÃ¡lt arugmentumvektor.
+ * @return A program visszatÃ©rÃ©si kÃ³dja, mely sikeres lefutÃ¡s esetÃ©n
+ * nulla, egyÃ©bkÃ©nt egy kÃ¼lsÅ‘ (az operÃ¡ciÃ³s rendszer Ã¡ltal generÃ¡lt)
+ * vagy belsÅ‘ (a program Ã¡ltal generÃ¡lt) hibakÃ³d.
  */
 int main(int argc, char* argv[])
 {

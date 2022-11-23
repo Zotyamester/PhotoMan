@@ -1,8 +1,8 @@
-/*****************************************************************//**
+Ôªø/*****************************************************************//**
  * @file   status.h
- * @brief  A hibakezelı modul fejlÈcf·jlja.
+ * @brief  A hibakezel≈ë modul fejl√©cf√°jlja.
  * 
- * @author Zolt·n Szatm·ry
+ * @author Zolt√°n Szatm√°ry
  * @date   November 2022
  *********************************************************************/
 #ifndef STATUS_H_INCLUDED

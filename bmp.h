@@ -1,9 +1,9 @@
-/*****************************************************************//**
+Ôªø/*****************************************************************//**
  * @file   bmp.h
- * @brief  A BMP form·tum˙ kÈpek kezelÈsÈt megvalÛsÌtÛ modul
- * fejlÈcf·jlja.
+ * @brief  A BMP form√°tum√∫ k√©pek kezel√©s√©t megval√≥s√≠t√≥ modul
+ * fejl√©cf√°jlja.
  * 
- * @author Zolt·n Szatm·ry
+ * @author Zolt√°n Szatm√°ry
  * @date   November 2022
  *********************************************************************/
 #ifndef BMP_H_INCLUDED

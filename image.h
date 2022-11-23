@@ -1,8 +1,8 @@
-/*****************************************************************//**
+ï»¿/*****************************************************************//**
  * @file   image.h
- * @brief  Absztrakt képek kezelését megvalósító modul fejlécfájlja.
+ * @brief  Absztrakt kÃ©pek kezelÃ©sÃ©t megvalÃ³sÃ­tÃ³ modul fejlÃ©cfÃ¡jlja.
  * 
- * @author Zoltán Szatmáry
+ * @author ZoltÃ¡n SzatmÃ¡ry
  * @date   November 2022
  *********************************************************************/
 #ifndef IMAGE_H_INCLUDED
@@ -18,39 +18,39 @@
 extern const char* image_error_code_strings[];
 
 /**
- * @brief Egy legfeljebb 24 bites, vörös, zöld és kék RGB színkomponensekbõlálló
- * színt leíró struktúra.
+ * @brief Egy legfeljebb 24 bites, vÃ¶rÃ¶s, zÃ¶ld Ã©s kÃ©k RGB szÃ­nkomponensekbÅ‘lÃ¡llÃ³
+ * szÃ­nt leÃ­rÃ³ struktÃºra.
  */
 typedef struct pixel_struct
 {
-	uint8_t blue; /* kék */
-	uint8_t green; /* zöld */
-	uint8_t red; /* vörös */
+	uint8_t blue; /* kÃ©k */
+	uint8_t green; /* zÃ¶ld */
+	uint8_t red; /* vÃ¶rÃ¶s */
 } Pixel;
 
 /**
- * @brief Egy absztrakt képstruktúra, mely egy – a 32 bites elõjel nélküli
- * egész számábrázolási korlátjaitól eltekintve – tetszõlegesen nagy
- * dimenziójú, legfeljebb 8 bites RGB komponensekkel rendelkezõ kép és jellemzõ
- * paramétereinek (szélesség, magasság) egységbezárására alkalmas.
+ * @brief Egy absztrakt kÃ©pstruktÃºra, mely egy â€“ a 32 bites elÅ‘jel nÃ©lkÃ¼li
+ * egÃ©sz szÃ¡mÃ¡brÃ¡zolÃ¡si korlÃ¡tjaitÃ³l eltekintve â€“ tetszÅ‘legesen nagy
+ * dimenziÃ³jÃº, legfeljebb 8 bites RGB komponensekkel rendelkezÅ‘ kÃ©p Ã©s jellemzÅ‘
+ * paramÃ©tereinek (szÃ©lessÃ©g, magassÃ¡g) egysÃ©gbezÃ¡rÃ¡sÃ¡ra alkalmas.
  * 
- * A képpontokat a címaritmetikát helyettesítõ pixels sorcím-leképzett
- * pointertömbön keresztül is el lehet érni.
+ * A kÃ©ppontokat a cÃ­maritmetikÃ¡t helyettesÃ­tÅ‘ pixels sorcÃ­m-lekÃ©pzett
+ * pointertÃ¶mbÃ¶n keresztÃ¼l is el lehet Ã©rni.
  */
 typedef struct image_struct
 {
-	uint32_t width; /* képszélesség */
-	uint32_t height; /* képmagasság */
-	Pixel* pixel_data; /* pixelmátrix */
-	Pixel** pixels; /* pointertömb a pixelmátrix soraira */
+	uint32_t width; /* kÃ©pszÃ©lessÃ©g */
+	uint32_t height; /* kÃ©pmagassÃ¡g */
+	Pixel* pixel_data; /* pixelmÃ¡trix */
+	Pixel** pixels; /* pointertÃ¶mb a pixelmÃ¡trix soraira */
 } Image;
 
-/* a képstuktúra kezelését megvalósító függvények */
+/* a kÃ©pstuktÃºra kezelÃ©sÃ©t megvalÃ³sÃ­tÃ³ fÃ¼ggvÃ©nyek */
 
 Image* image_create(uint32_t width, uint32_t height);
 void image_destroy(Image* image);
 
-/* az elemi képmanipulációkat megvalósító függvények */
+/* az elemi kÃ©pmanipulÃ¡ciÃ³kat megvalÃ³sÃ­tÃ³ fÃ¼ggvÃ©nyek */
 
 int image_scale(Image* image, float horizontal, float vertical);
 int image_mirror_x(Image* image);

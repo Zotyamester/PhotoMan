@@ -1,4 +1,4 @@
-#ifndef DEBUGMALLOC_H
+﻿#ifndef DEBUGMALLOC_H
 #define DEBUGMALLOC_H
 
 #include <stdbool.h>

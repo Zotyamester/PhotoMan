@@ -1,9 +1,9 @@
-/*****************************************************************//**
+Ôªø/*****************************************************************//**
  * @file   cmd.h
- * @brief  Parancssori argumentumok kezelÈsÈt Ès valid·l·s·t vÈgzı
- * f¸ggvÈnyeket megvalÛsÌtÛ modul fejlÈcf·jlja.
+ * @brief  Parancssori argumentumok kezel√©s√©t √©s valid√°l√°s√°t v√©gz≈ë
+ * f√ºggv√©nyeket megval√≥s√≠t√≥ modul fejl√©cf√°jlja.
  * 
- * @author Zolt·n Szatm·ry
+ * @author Zolt√°n Szatm√°ry
  * @date   November 2022
  *********************************************************************/
 #ifndef CMD_H_INCLUDED
