@@ -22,6 +22,6 @@
 extern const char* bmp_error_code_strings[];
 
 int bmp_load(Image** p_image, FILE* file);
-int bmp_store(Image** p_image, FILE* file);
+int bmp_store(const Image** p_image, FILE* file);
 
 #endif /* BMP_H_INCLUDED */

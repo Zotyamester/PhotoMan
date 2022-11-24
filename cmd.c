@@ -9,6 +9,7 @@
 #include "cmd.h"
 #include "status.h"
 
+#include <stdio.h>
 #include <string.h>
 
 /* az argumentumok kezelésénél előjövő hibakódok szöveges reprezentációja */

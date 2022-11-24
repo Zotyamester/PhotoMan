@@ -67,7 +67,7 @@ struct color_entry
 
 /**
  * Megvizsgálja, hogy a fájlfejléc szabványos-e.
- * 
+ *
  * @param fileheader A fájlfejléc.
  * @return Amennyiben a szignatúra nem felel meg a szabványosnak,
  * BMP_INVALID_SIGNATURE-rel, egyébként pedig NO_ERROR-ral tér vissza.
@@ -81,7 +81,7 @@ static int bmp_check_file_validity(struct file_header_struct* fileheader)
 
 /**
  * Megvizsgálja, hogy az információs fejléc szabványos-e.
- * 
+ *
  * @param infoheader Az információs fejléc.
  * @return Amennyiben sok fejléc "megjelenítés" mezője nem "képernyő"-re
  * van állítva, BMP_TOO_MANY_PLANES-zel, ha a színekkel kapcsolatos mezők
@@ -111,7 +111,7 @@ static int bmp_check_info_validity(struct info_header_struct* infoheader)
 
 /**
  * Kiszámolja egy bittérképbeli sor hosszát 4 bájtos igazítással.
- * 
+ *
  * @param width A sor hossza (bájtban).
  * @param bits_per_pixel A pixelenkénti bitek száma, vagyis a bitmélység.
  * @return Visszatér a kiszámított sorhosszal.
@@ -127,7 +127,7 @@ typedef size_t(*foperation)(void* buffer, size_t element_size, size_t element_co
 
 /**
  * Elvégez egy I/O műveletet egy fájlfejléccel.
- * 
+ *
  * @param p_fileheader A fájlfejlécre mutató pointer.
  * @param file A fájl.
  * @param operation Az elvégzendő I/O művelet (fread/fwrite).
@@ -146,7 +146,7 @@ static int bmp_rdwr_file_header(struct file_header_struct* p_fileheader, FILE* f
 
 /**
  * Beolvas egy fájlfejlécet egy fájlból.
- * 
+ *
  * @param p_fileheader A fájlfejlécre mutató pointer.
  * @param file A fájl.
  * @return Sikeres lefutás esetén NO_ERROR-ral, beolvasás közben felmerülő
@@ -225,7 +225,7 @@ static int bmp_write_info_header(struct info_header_struct* p_infoheader, FILE* 
 /**
  * Kivág egy bitszekvenciát egy 32 bites előjel nélküli egészeket tartalmazó
  * tömbből.
- * 
+ *
  * @param array A tömb.
  * @param start A legelső kivágandó bit indexe (0-tól számozva).
  * @param size A kivágandó bitszekvencia mérete (bitekben).
@@ -264,9 +264,9 @@ static uint32_t cut_bitseq_from_u32_array(const uint32_t* array, uint64_t start,
 /**
  * Betölt egy szabványos BMP formátumú képet egy fájlból, melyet paraméterként
  * ad vissza a hívónak.
- * 
+ *
  * A lefoglalt memóriaterület felszabadítása a hívó feladata.
- * 
+ *
  * @param p_image A képre mutató poitner helye.
  * @param file A fájl.
  * @return Sikeres lefutás esetén NO_ERROR-ral, egyébként a validálások,
