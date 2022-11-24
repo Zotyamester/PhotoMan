@@ -33,6 +33,8 @@ const char* image_error_code_strings[] = {
  */
 static int image_create_pixel_matrix(uint32_t width, uint32_t height, Pixel** p_pixel_data, Pixel*** p_pixels)
 {
+	debugmalloc_max_block_size(width * height * sizeof(Pixel) + height * sizeof(Pixel*));
+
 	Pixel* pixel_data = (Pixel*)malloc(width * height * sizeof(Pixel));
 	if (pixel_data == NULL)
 		return MEMORY_ERROR;
@@ -66,8 +68,6 @@ static int image_create_pixel_matrix(uint32_t width, uint32_t height, Pixel** p_
  */
 Image* image_create(uint32_t width, uint32_t height)
 {
-	debugmalloc_max_block_size(sizeof(Image) + width * height * sizeof(Pixel) + height * sizeof(Pixel*));
-
 	Image* image = (Image*)malloc(sizeof(Image));
 	if (image == NULL)
 		return NULL;
