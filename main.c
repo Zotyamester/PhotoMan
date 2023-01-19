@@ -1,7 +1,7 @@
 ﻿/*****************************************************************//**
  * @file   main.c
  * @brief  A főprogram.
- * 
+ *
  * @author Zoltán Szatmáry
  * @date   November 2022
  *********************************************************************/
@@ -14,18 +14,18 @@
 
 #include "debugmalloc.h"
 
-/**
- * A program belépési pontja.
- * Itt történik
- *   - az argumentumok validálása (részben),
- *   - az erőforrások kezelése (allokátorok, deallokátorok vezérlése),
- *   - az argumentumokban meghatározott műveletek meghívása.
- * @param argc Argumentumok száma beleértve a futtatható bináris nevét.
- * @param argv A NULL-terminált arugmentumvektor.
- * @return A program visszatérési kódja, mely sikeres lefutás esetén
- * nulla, egyébként egy külső (az operációs rendszer által generált)
- * vagy belső (a program által generált) hibakód.
- */
+ /**
+  * A program belépési pontja.
+  * Itt történik
+  *   - az argumentumok validálása (részben),
+  *   - az erőforrások kezelése (allokátorok, deallokátorok vezérlése),
+  *   - az argumentumokban meghatározott műveletek meghívása.
+  * @param argc Argumentumok száma beleértve a futtatható bináris nevét.
+  * @param argv A NULL-terminált arugmentumvektor.
+  * @return A program visszatérési kódja, mely sikeres lefutás esetén
+  * nulla, egyébként egy külső (az operációs rendszer által generált)
+  * vagy belső (a program által generált) hibakód.
+  */
 int main(int argc, char* argv[])
 {
 	int status = NO_ERROR;
