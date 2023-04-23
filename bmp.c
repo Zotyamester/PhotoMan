@@ -33,7 +33,7 @@ struct file_header_struct
 {
 	uint16_t signature;
 
-	uint16_t __padding; /* 4 bájtos padding (natural alignment) */
+	uint16_t _padding; /* 4 bájtos padding (natural alignment) */
 
 	uint32_t file_size;
 	uint32_t reserved;
@@ -93,7 +93,7 @@ static int bmp_check_info_validity(struct info_header_struct* infoheader)
 	if (infoheader->planes != BMP_PLANES_VALUE)
 		return BMP_TOO_MANY_PLANES;
 
-	if (!(infoheader->important_colors <= infoheader->colors_used))
+	if (infoheader->important_colors > infoheader->colors_used)
 		return BMP_INVALID_COLORS;
 
 	switch (infoheader->bits_per_pixel)
@@ -234,12 +234,12 @@ static int bmp_write_info_header(struct info_header_struct* p_infoheader, FILE* 
  */
 static uint32_t cut_bitseq_from_u32_array(const uint32_t* array, uint64_t start, uint16_t size)
 {
-	const uint32_t from = start;
-	const uint32_t to = start + size;
+	const uint64_t from = start;
+	const uint64_t to = start + size;
 
 	const uint32_t from_idx = from / 32;
 	const uint32_t from_offset = from % 32;
-	const uint32_t from_size = (size < (32 - from % 32)) ? size : (32 - from % 32);
+	const uint32_t from_size = (size < (32 - from_offset)) ? size : (32 - from_offset);
 
 	uint32_t bitseq = 0;
 
@@ -344,7 +344,7 @@ int bmp_load(Image** p_image, FILE* file)
 			}
 			else if (infoheader.bits_per_pixel <= 8)
 			{
-				struct color_entry* color = &color_table[pixeldata];
+				const struct color_entry* color = &color_table[pixeldata];
 				pixel.blue = color->blue;
 				pixel.green = color->green;
 				pixel.red = color->red;
